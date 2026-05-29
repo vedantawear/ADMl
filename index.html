@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Vedanta Admin Panel | Universal Categories</title>
+    <title>Vedanta Admin | Custom Orders + Products</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -47,12 +48,8 @@
             background-clip: text;
             color: transparent;
         }
-        .header-buttons {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-        .return-manage-btn {
+        .header-buttons { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .return-manage-btn, .custom-orders-btn {
             background: rgba(255,152,0,0.15);
             border: 1px solid rgba(255,152,0,0.3);
             padding: 8px 20px;
@@ -66,10 +63,7 @@
             gap: 8px;
             transition: 0.2s;
         }
-        .return-manage-btn:hover {
-            background: rgba(255,152,0,0.25);
-            transform: scale(0.98);
-        }
+        .custom-orders-btn { background: rgba(156,39,176,0.15); border-color: rgba(156,39,176,0.3); color: #CE93D8; }
         .logout-btn {
             background: rgba(244,67,54,0.15);
             border: 1px solid rgba(244,67,54,0.3);
@@ -82,7 +76,7 @@
         }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
             gap: 16px;
             padding: 20px;
         }
@@ -93,9 +87,7 @@
             padding: 20px;
             text-align: center;
             border: 1px solid rgba(212,175,55,0.15);
-            transition: 0.2s;
         }
-        .stat-card:hover { transform: translateY(-3px); border-color: rgba(212,175,55,0.4); }
         .stat-card i { font-size: 36px; color: #D4AF37; margin-bottom: 12px; }
         .stat-number { font-size: 32px; font-weight: 800; color: #FFD966; }
         .stat-label { font-size: 12px; color: #888; margin-top: 5px; }
@@ -131,12 +123,7 @@
             padding: 15px;
             border-radius: 20px;
         }
-        .filter-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
+        .filter-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .filter-btn {
             background: rgba(20,20,30,0.8);
             border: 1px solid rgba(212,175,55,0.2);
@@ -145,97 +132,12 @@
             color: #DDD;
             font-size: 12px;
             cursor: pointer;
-            transition: 0.2s;
         }
-        .filter-btn:hover, .filter-btn.active {
-            background: #D4AF37;
-            color: #050508;
-        }
-        .date-range-box {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(212,175,55,0.3);
-            border-radius: 40px;
-            padding: 6px 16px;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .date-range-box:hover {
-            border-color: #D4AF37;
-            background: rgba(212,175,55,0.1);
-        }
-        .date-range-box i { color: #D4AF37; font-size: 14px; }
-        .date-range-text { font-size: 12px; color: #DDD; }
-        .datepicker-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 10000;
-            align-items: center;
-            justify-content: center;
-        }
-        .datepicker-modal.show { display: flex; }
-        .datepicker-content {
-            background: rgba(15,15,22,0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 32px;
-            padding: 24px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            border: 1px solid #D4AF37;
-        }
-        .datepicker-content h3 { color: #D4AF37; margin-bottom: 20px; }
-        .datepicker-input-group { margin-bottom: 20px; text-align: left; }
-        .datepicker-input-group label { display: block; margin-bottom: 8px; font-size: 13px; color: #CCC; }
-        .clickable-date-input {
-            width: 100%;
-            padding: 12px;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(212,175,55,0.3);
-            border-radius: 16px;
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .clickable-date-input:hover { border-color: #D4AF37; background: rgba(212,175,55,0.1); }
-        .clickable-date-input .placeholder-text { color: #888; }
-        .clickable-date-input .selected-date { color: #D4AF37; }
-        .clickable-date-input i { color: #D4AF37; }
-        .datepicker-buttons { display: flex; gap: 12px; margin-top: 20px; }
-        .datepicker-apply {
-            flex: 1;
-            background: linear-gradient(135deg, #D4AF37, #FF8C00);
-            border: none;
-            padding: 12px;
-            border-radius: 30px;
-            font-weight: 700;
-            cursor: pointer;
-            color: #050508;
-        }
-        .datepicker-cancel {
-            flex: 1;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            padding: 12px;
-            border-radius: 30px;
-            font-weight: 700;
-            cursor: pointer;
-            color: white;
-        }
+        .filter-btn.active, .filter-btn:hover { background: #D4AF37; color: #050508; }
         
         .products-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 16px;
             margin-top: 20px;
         }
@@ -245,15 +147,12 @@
             border-radius: 24px;
             padding: 16px;
             border: 1px solid rgba(212,175,55,0.15);
-            transition: 0.2s;
         }
-        .product-item:hover { transform: translateY(-3px); border-color: rgba(212,175,55,0.4); }
         .product-img-preview {
             width: 100%;
             height: 150px;
             background: #0E0E14;
             border-radius: 16px;
-            margin-bottom: 12px;
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -261,251 +160,32 @@
         }
         .product-img-preview img { width: 100%; height: 100%; object-fit: cover; }
         .product-img-preview i { font-size: 55px; color: #D4AF37; }
-        .product-item h4 { font-size: 16px; margin-bottom: 8px; }
-        .product-price { color: #D4AF37; font-weight: 700; font-size: 18px; margin: 8px 0; }
-        .product-category { font-size: 11px; color: #888; margin-bottom: 8px; }
+        .product-item h4 { font-size: 16px; margin: 10px 0 5px; }
+        .product-price { color: #D4AF37; font-weight: 700; font-size: 18px; }
         .product-actions { display: flex; gap: 10px; margin-top: 12px; }
-        .edit-btn, .delete-btn {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-        }
+        .edit-btn, .delete-btn { padding: 6px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; border: none; }
         .edit-btn { background: rgba(33,150,243,0.2); color: #2196F3; }
         .delete-btn { background: rgba(244,67,54,0.2); color: #F44336; }
         
-        .edit-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 10000;
-            align-items: center;
-            justify-content: center;
-            overflow-y: auto;
-            padding: 20px;
-        }
-        .edit-modal.show { display: flex; }
-        .edit-modal-content {
-            background: rgba(15,15,22,0.98);
-            backdrop-filter: blur(20px);
-            border-radius: 32px;
-            padding: 28px;
-            max-width: 900px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid #D4AF37;
-        }
-        .edit-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(212,175,55,0.3);
-        }
-        .edit-modal-header h2 { color: #D4AF37; font-size: 24px; }
-        .close-edit-modal {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 28px;
-            cursor: pointer;
-        }
-        .form-group { margin-bottom: 18px; }
-        .form-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 12px;
-            color: #D4AF37;
-            font-weight: 600;
-        }
-        .form-group input, .form-group select, .form-group textarea {
-            width: 100%;
-            padding: 12px;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(212,175,55,0.3);
-            border-radius: 16px;
-            color: white;
-            font-size: 14px;
-        }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .chips-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 8px;
-            margin-bottom: 12px;
-        }
-        .chip {
-            background: rgba(212,175,55,0.15);
-            border: 1px solid rgba(212,175,55,0.3);
-            padding: 6px 14px;
-            border-radius: 30px;
-            font-size: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .chip .remove-chip { color: #F44336; cursor: pointer; font-size: 12px; }
-        .add-section {
-            display: flex;
-            gap: 10px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .add-section input, .add-section select {
-            flex: 1;
-            min-width: 120px;
-            padding: 10px;
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(212,175,55,0.3);
-            border-radius: 12px;
-            color: white;
-        }
-        .add-btn {
-            background: rgba(212,175,55,0.2);
-            border: 1px solid #D4AF37;
-            padding: 8px 20px;
-            border-radius: 30px;
-            color: #D4AF37;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .color-dot-small {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            display: inline-block;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        .image-preview-edit {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-            margin-bottom: 10px;
-        }
-        .edit-preview-img {
-            width: 80px;
-            height: 80px;
-            background: #0E0E14;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-        }
-        .edit-preview-img img { width: 100%; height: 100%; object-fit: cover; }
-        .remove-image-btn {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: #F44336;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            cursor: pointer;
-        }
-        .save-edit-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #D4AF37, #FF8C00);
-            border: none;
-            padding: 14px;
-            border-radius: 50px;
-            font-weight: 800;
-            font-size: 16px;
-            color: #050508;
-            cursor: pointer;
-            margin-top: 20px;
-        }
-        .color-grid-popup {
-            background: rgba(0,0,0,0.95);
-            border-radius: 20px;
-            padding: 15px;
-            margin-top: 10px;
-            border: 1px solid #D4AF37;
-            max-height: 350px;
-            overflow-y: auto;
-        }
-        .color-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        .color-option {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            width: 70px;
-            padding: 5px;
-            border-radius: 10px;
-            transition: 0.2s;
-        }
-        .color-option:hover {
-            background: rgba(212,175,55,0.2);
-            transform: scale(1.05);
-        }
-        .color-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid rgba(212,175,55,0.5);
-            box-shadow: 0 0 5px rgba(0,0,0,0.3);
-        }
-        .color-name {
-            font-size: 9px;
-            margin-top: 5px;
-            color: #aaa;
-            text-align: center;
-            max-width: 65px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .main-colors-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin: 15px 0 15px 0;
-        }
-        .main-color-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .main-color-item:hover { transform: scale(1.1); }
-        .main-color-circle {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 0 8px rgba(212,175,55,0.5);
-        }
-        .main-color-name {
-            font-size: 10px;
-            margin-top: 5px;
-            color: #D4AF37;
-            font-weight: 500;
-        }
-        
+        /* Custom Orders Table */
         .orders-table { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
         th { color: #D4AF37; font-size: 13px; }
         td { font-size: 12px; }
+        .custom-design-thumb {
+            width: 50px;
+            height: 50px;
+            background: #0E0E14;
+            border-radius: 12px;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+        }
+        .custom-design-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .custom-design-thumb i { font-size: 25px; color: #D4AF37; }
         .status-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -513,11 +193,13 @@
             font-size: 11px;
             font-weight: 600;
         }
+        .status-pending { background: rgba(255,152,0,0.2); color: #FF9800; }
         .status-confirmed { background: rgba(33,150,243,0.2); color: #2196F3; }
         .status-processing { background: rgba(255,152,0,0.2); color: #FF9800; }
         .status-shipped { background: rgba(156,39,176,0.2); color: #9C27B0; }
         .status-delivered { background: rgba(76,175,80,0.2); color: #4CAF50; }
         .status-cancelled { background: rgba(244,67,54,0.2); color: #F44336; }
+        
         .status-select {
             background: rgba(0,0,0,0.5);
             border: 1px solid rgba(212,175,55,0.3);
@@ -531,7 +213,6 @@
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 11px;
-            font-weight: 600;
             cursor: pointer;
             border: none;
             margin: 0 3px;
@@ -546,14 +227,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
             align-items: center;
             justify-content: center;
         }
         .order-modal.show { display: flex; }
         .order-modal-content {
-            background: rgba(15,15,22,0.95);
+            background: rgba(15,15,22,0.98);
             backdrop-filter: blur(15px);
             border-radius: 32px;
             padding: 24px;
@@ -561,7 +242,7 @@
             width: 90%;
             max-height: 85vh;
             overflow-y: auto;
-            border: 1px solid rgba(212,175,55,0.3);
+            border: 1px solid #D4AF37;
         }
         .order-modal-header {
             display: flex;
@@ -569,19 +250,8 @@
             align-items: center;
             margin-bottom: 20px;
         }
-        .close-order-modal {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-        }
-        .order-detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
+        .close-order-modal { background: none; border: none; color: white; font-size: 28px; cursor: pointer; }
+        .order-detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
         .order-product-img {
             width: 70px;
             height: 70px;
@@ -591,66 +261,39 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 15px;
             flex-shrink: 0;
         }
         .order-product-img img { width: 100%; height: 100%; object-fit: cover; }
-        .order-product-img i { font-size: 35px; color: #D4AF37; }
         .order-item-with-img {
             display: flex;
-            align-items: center;
             gap: 15px;
             padding: 15px 0;
             border-bottom: 1px solid rgba(255,255,255,0.08);
         }
         .order-item-info { flex: 1; }
         .order-item-info h4 { font-size: 15px; margin-bottom: 5px; }
-        .order-item-info p { font-size: 12px; color: #888; margin: 3px 0; }
-        .order-item-size {
-            display: inline-block;
-            background: rgba(212,175,55,0.15);
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            color: #D4AF37;
-            margin-top: 5px;
-            margin-right: 8px;
-        }
-        .order-item-color {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(212,175,55,0.15);
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            color: #D4AF37;
-            margin-top: 5px;
-        }
-        .color-swatch-small {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            display: inline-block;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-        .combo-badge-detail {
-            background: #4CAF50;
-            color: white;
-            font-size: 11px;
+        .custom-badge-detail {
+            background: linear-gradient(135deg, #D4AF37, #FF8C00);
+            color: #050508;
             padding: 3px 12px;
             border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
             display: inline-block;
-            margin-top: 5px;
+            margin: 5px 0;
         }
-        .order-item-price {
-            font-weight: 700;
-            color: #D4AF37;
-            font-size: 15px;
-            text-align: right;
-            min-width: 100px;
+        .design-preview-small {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
         }
-        
+        .design-preview-small img {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #1a1a2e;
+            object-fit: contain;
+        }
         .toast {
             position: fixed;
             bottom: 30px;
@@ -671,12 +314,7 @@
             15% { opacity: 1; transform: translateX(-50%) translateY(0); }
             100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
         }
-        .login-container {
-            max-width: 450px;
-            width: 90%;
-            margin: 0 auto;
-            padding-top: 100px;
-        }
+        .login-container { max-width: 450px; width: 90%; margin: 0 auto; padding-top: 100px; }
         .login-card {
             background: rgba(15,15,22,0.7);
             backdrop-filter: blur(15px);
@@ -684,7 +322,7 @@
             padding: 35px 28px;
             border: 1px solid rgba(212,175,55,0.2);
         }
-        .login-card h2 { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+        .login-card h2 { font-size: 28px; text-align: center; margin-bottom: 8px; }
         .login-card p { text-align: center; color: #888; font-size: 13px; margin-bottom: 30px; }
         .input-group { margin-bottom: 20px; }
         .input-group label { display: block; margin-bottom: 8px; font-size: 13px; color: #CCCCCC; }
@@ -704,49 +342,117 @@
             padding: 16px;
             border-radius: 30px;
             font-weight: 800;
-            font-size: 16px;
             color: #050508;
             cursor: pointer;
-            margin-top: 10px;
-        }
-        .sync-badge {
-            background: rgba(76,175,80,0.2);
-            color: #4CAF50;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 10px;
-            margin-left: 10px;
-        }
-        .add-product-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
         }
         .add-product-link {
             background: linear-gradient(135deg, #D4AF37, #FF8C00);
-            border: none;
             padding: 10px 20px;
             border-radius: 40px;
             font-weight: 700;
             color: #050508;
             cursor: pointer;
-            text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
             font-size: 14px;
+            border: none;
+        }
+        .edit-modal, .datepicker-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .edit-modal.show, .datepicker-modal.show { display: flex; }
+        .edit-modal-content, .datepicker-content {
+            background: rgba(15,15,22,0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 32px;
+            padding: 28px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid #D4AF37;
+        }
+        .form-group { margin-bottom: 18px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 12px; color: #D4AF37; font-weight: 600; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: 16px;
+            color: white;
+            font-size: 14px;
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .chips-container { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0; }
+        .chip {
+            background: rgba(212,175,55,0.15);
+            border: 1px solid rgba(212,175,55,0.3);
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .remove-chip { color: #F44336; cursor: pointer; font-size: 12px; }
+        .add-section { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+        .add-btn {
+            background: rgba(212,175,55,0.2);
+            border: 1px solid #D4AF37;
+            padding: 8px 20px;
+            border-radius: 30px;
+            color: #D4AF37;
+            cursor: pointer;
+        }
+        .save-edit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #D4AF37, #FF8C00);
+            border: none;
+            padding: 14px;
+            border-radius: 50px;
+            font-weight: 800;
+            color: #050508;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .color-dot-small { width: 16px; height: 16px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .image-preview-edit { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+        .edit-preview-img { width: 80px; height: 80px; background: #0E0E14; border-radius: 12px; overflow: hidden; position: relative; }
+        .edit-preview-img img { width: 100%; height: 100%; object-fit: cover; }
+        .remove-image-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #F44336;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            cursor: pointer;
+        }
+        .custom-order-highlight {
+            background: rgba(212,175,55,0.1);
+            border-left: 3px solid #D4AF37;
         }
         @media (max-width: 700px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .form-row { grid-template-columns: 1fr; }
-            .add-section { flex-direction: column; align-items: stretch; }
-            .order-filters { flex-direction: column; align-items: stretch; }
-            .main-color-circle { width: 35px; height: 35px; }
-            .main-color-name { font-size: 8px; }
-            .header-buttons { width: 100%; justify-content: flex-end; }
         }
     </style>
 </head>
@@ -755,15 +461,13 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ========== 🔥 FIREBASE CONFIGURATION - UPDATED (NEW CONFIG) ==========
         const firebaseConfig = {
             apiKey: "AIzaSyCBZuwN4SKkXX1fEriYEwWDyTm-3uZnrKI",
             authDomain: "nexi-53897.firebaseapp.com",
             projectId: "nexi-53897",
             storageBucket: "nexi-53897.firebasestorage.app",
             messagingSenderId: "337349382612",
-            appId: "1:337349382612:web:ae3c9b3d0fbf69f0e38641",
-            measurementId: "G-W6N519LBPH"
+            appId: "1:337349382612:web:ae3c9b3d0fbf69f0e38641"
         };
         
         firebase.initializeApp(firebaseConfig);
@@ -774,184 +478,305 @@
         
         let isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
         let products = [];
-        let orders = [];
+        let regularOrders = [];      // Non-custom orders (regular products)
+        let customOrders = [];        // Custom T-Shirt orders (isCustomized === true)
         let currentEditProduct = null;
-        
-        let currentDateFilter = 'all';
-        let currentStatusFilter = 'all';
-        let customStartDate = '';
-        let customEndDate = '';
-        let tempStartDate = '';
-        let tempEndDate = '';
-        
-        const mainColorsList = [
-            { name: "Red", code: "#FF0000" }, { name: "Crimson", code: "#DC143C" }, { name: "Maroon", code: "#800000" },
-            { name: "Orange", code: "#FFA500" }, { name: "Gold", code: "#FFD700" }, { name: "Yellow", code: "#FFFF00" },
-            { name: "Lime", code: "#32CD32" }, { name: "Green", code: "#008000" }, { name: "Teal", code: "#008080" },
-            { name: "Cyan", code: "#00FFFF" }, { name: "Blue", code: "#0000FF" }, { name: "Navy", code: "#000080" },
-            { name: "Purple", code: "#800080" }, { name: "Magenta", code: "#FF00FF" }, { name: "Pink", code: "#FF69B4" },
-            { name: "HotPink", code: "#FF1493" }, { name: "Brown", code: "#8B4513" }, { name: "Black", code: "#000000" },
-            { name: "White", code: "#FFFFFF" }, { name: "Silver", code: "#C0C0C0" }
-        ];
-        
-        function getAllColorsList() {
-            let colors = [...mainColorsList];
-            const extraColors = ["Lavender", "Indigo", "Violet", "Turquoise", "Aqua", "Coral", "Salmon", "Khaki",
-                "Ivory", "MintCream", "Olive", "PeachPuff", "Plum", "Rose", "Tan", "Wheat", "Beige", "Bisque",
-                "Chocolate", "CornflowerBlue", "DarkCyan", "DarkGoldenRod", "DarkGray", "DarkGreen", "DarkKhaki",
-                "DarkMagenta", "DarkOliveGreen", "DarkOrange", "DarkOrchid", "DarkRed", "DarkSalmon", "DarkSeaGreen",
-                "DarkSlateBlue", "DarkSlateGray", "DarkTurquoise", "DarkViolet", "DeepPink", "DeepSkyBlue", "DimGray",
-                "DodgerBlue", "FireBrick", "ForestGreen", "Fuchsia", "Gainsboro", "GhostWhite", "GoldenRod", "Gray",
-                "GreenYellow", "HoneyDew", "IndianRed", "LawnGreen", "LightBlue", "LightCoral", "LightCyan",
-                "LightGoldenRodYellow", "LightGray", "LightGreen", "LightPink", "LightSalmon", "LightSeaGreen",
-                "LightSkyBlue", "LightSlateGray", "LightSteelBlue", "LightYellow", "LimeGreen", "Linen",
-                "MediumAquaMarine", "MediumBlue", "MediumOrchid", "MediumPurple", "MediumSeaGreen", "MediumSlateBlue",
-                "MediumSpringGreen", "MediumTurquoise", "MediumVioletRed", "MidnightBlue", "MistyRose", "Moccasin",
-                "NavajoWhite", "OldLace", "OliveDrab", "OrangeRed", "Orchid", "PaleGoldenRod", "PaleGreen",
-                "PaleTurquoise", "PaleVioletRed", "PapayaWhip", "Peru", "PowderBlue", "RosyBrown", "RoyalBlue",
-                "SaddleBrown", "SandyBrown", "SeaGreen", "SeaShell", "Sienna", "SkyBlue", "SlateBlue", "SlateGray",
-                "Snow", "SpringGreen", "SteelBlue", "Thistle", "Tomato", "Violet", "WhiteSmoke", "YellowGreen"];
-            
-            extraColors.forEach(colorName => {
-                let randomCode = `#${Math.floor(Math.random()*16777215).toString(16).padStart(6,'0')}`;
-                colors.push({ name: colorName, code: randomCode });
-            });
-            return colors;
-        }
-        
-        function getColorCode(colorName) {
-            if (!colorName) return '#D4AF37';
-            const allColors = getAllColorsList();
-            const found = allColors.find(c => c.name.toLowerCase() === colorName.toLowerCase());
-            if (found) return found.code;
-            return '#D4AF37';
-        }
         
         function showToast(msg, isError = false) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.style.background = isError ? '#F44336' : '#D4AF37';
-            toast.style.color = isError ? 'white' : '#050508';
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 2500);
         }
         
-        // Load from cache instantly
-        function loadFromCache() {
-            try {
-                const cachedProducts = localStorage.getItem('admin_products_cache');
-                if (cachedProducts) {
-                    products = JSON.parse(cachedProducts);
-                    renderProducts();
-                    updateStats();
-                }
-                const cachedOrders = localStorage.getItem('admin_orders_cache');
-                if (cachedOrders) {
-                    orders = JSON.parse(cachedOrders);
-                    renderOrders();
-                    updateStats();
-                }
-            } catch(e) { console.log("Cache load error:", e); }
-        }
-        
-        function saveToCache() {
-            try {
-                localStorage.setItem('admin_products_cache', JSON.stringify(products));
-                localStorage.setItem('admin_orders_cache', JSON.stringify(orders));
-            } catch(e) { console.log("Cache save error:", e); }
-        }
-        
-        async function loadData() {
+        async function loadAllData() {
             try {
                 const productsSnap = await db.collection('products').orderBy('createdAt', 'desc').get();
                 products = [];
                 productsSnap.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
                 
                 const ordersSnap = await db.collection('orders').orderBy('orderDate', 'desc').get();
-                orders = [];
-                ordersSnap.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+                regularOrders = [];
+                customOrders = [];
+                ordersSnap.forEach(doc => {
+                    const order = { id: doc.id, ...doc.data() };
+                    if (order.isCustomized === true || (order.items && order.items.some(item => item.isCustomized === true))) {
+                        customOrders.push(order);
+                    } else {
+                        regularOrders.push(order);
+                    }
+                });
                 
-                saveToCache();
                 renderProducts();
-                renderOrders();
+                renderRegularOrders();
+                renderCustomOrders();
                 updateStats();
-                
-            } catch(e) { console.log(e); }
-        }
-        
-        async function updateProductInFirebase(productId, updatedData) {
-            try {
-                await db.collection('products').doc(productId).update(updatedData);
-                return { success: true };
-            } catch(error) { return { success: false, error: error.message }; }
-        }
-        
-        async function deleteProductFromFirebase(productId) {
-            try {
-                await db.collection('products').doc(productId).delete();
-                return { success: true };
-            } catch(error) { return { success: false, error: error.message }; }
-        }
-        
-        async function deleteOrderFromFirebase(orderId) {
-            try {
-                await db.collection('orders').doc(orderId).delete();
-                return { success: true };
-            } catch(error) { return { success: false, error: error.message }; }
-        }
-        
-        async function updateOrderStatusInFirebase(orderId, newStatus) {
-            try {
-                await db.collection('orders').doc(orderId).update({ status: newStatus, updatedAt: new Date().toISOString() });
-                return { success: true };
-            } catch(error) { return { success: false, error: error.message }; }
-        }
-        
-        function calculateTotalRevenue() {
-            return orders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + (o.total || 0), 0);
-        }
-        
-        function calculateTotalOrders() {
-            return orders.filter(o => o.status !== 'cancelled').length;
+            } catch(e) { console.error(e); showToast("Error loading data", true); }
         }
         
         function updateStats() {
-            const totalProductsEl = document.getElementById('totalProducts');
-            const totalOrdersEl = document.getElementById('totalOrders');
-            const totalRevenueEl = document.getElementById('totalRevenue');
-            const totalCustomersEl = document.getElementById('totalCustomers');
+            const totalProducts = products.length;
+            const totalRegularOrders = regularOrders.filter(o => o.status !== 'cancelled').length;
+            const totalCustomOrders = customOrders.filter(o => o.status !== 'cancelled').length;
+            const totalRevenueRegular = regularOrders.filter(o => o.status !== 'cancelled').reduce((s,o) => s + (o.total || 0), 0);
+            const totalRevenueCustom = customOrders.filter(o => o.status !== 'cancelled').reduce((s,o) => s + (o.total || 0), 0);
             
-            if (totalProductsEl) totalProductsEl.innerText = products.length;
-            if (totalOrdersEl) totalOrdersEl.innerText = calculateTotalOrders();
-            if (totalRevenueEl) totalRevenueEl.innerText = '₹' + calculateTotalRevenue().toLocaleString('en-IN');
-            if (totalCustomersEl) {
-                const unique = new Set(orders.filter(o => o.status !== 'cancelled').map(o => o.customerEmail)).size;
-                totalCustomersEl.innerText = unique;
-            }
+            document.getElementById('totalProducts') && (document.getElementById('totalProducts').innerText = totalProducts);
+            document.getElementById('totalRegularOrders') && (document.getElementById('totalRegularOrders').innerText = totalRegularOrders);
+            document.getElementById('totalCustomOrders') && (document.getElementById('totalCustomOrders').innerText = totalCustomOrders);
+            document.getElementById('totalRevenueRegular') && (document.getElementById('totalRevenueRegular').innerText = '₹' + totalRevenueRegular.toLocaleString('en-IN'));
+            document.getElementById('totalRevenueCustom') && (document.getElementById('totalRevenueCustom').innerText = '₹' + totalRevenueCustom.toLocaleString('en-IN'));
         }
         
         function renderProducts() {
             const container = document.getElementById('productsList');
             if (!container) return;
             if (products.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:40px;">📦 No products found. Click "Add New Product" to add.</div>';
+                container.innerHTML = '<div style="text-align:center; padding:40px;">📦 No products added yet.</div>';
                 return;
             }
             container.innerHTML = products.map(p => `
                 <div class="product-item">
                     <div class="product-img-preview">
-                        ${p.images && p.images.length > 0 ? `<img src="${p.images[0]}" alt="${escapeHtml(p.name)}">` : `<i class="fas ${p.icon || 'fa-gem'}"></i>`}
+                        ${p.images && p.images[0] ? `<img src="${p.images[0]}" alt="${escapeHtml(p.name)}">` : `<i class="fas fa-tshirt"></i>`}
                     </div>
                     <h4>${escapeHtml(p.name)}</h4>
                     <div class="product-price">₹${(p.price || 0).toLocaleString('en-IN')}</div>
-                    <div class="product-category">${p.category || 'General'} • ${p.badge || 'New'}</div>
+                    <div class="product-category">${p.category || 'General'} • ${p.badge || ''}</div>
                     <div class="product-actions">
-                        <button class="edit-btn" onclick="openEditModal('${p.id}')"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="delete-btn" onclick="deleteProduct('${p.id}')"><i class="fas fa-trash"></i> Delete</button>
+                        <button class="edit-btn" onclick="openEditProductModal('${p.id}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="delete-btn" onclick="deleteProductItem('${p.id}')"><i class="fas fa-trash"></i> Delete</button>
                     </div>
                 </div>
             `).join('');
+        }
+        
+        function renderRegularOrders() {
+            const container = document.getElementById('regularOrdersList');
+            if (!container) return;
+            if (regularOrders.length === 0) {
+                container.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">📭 No regular orders found</td></tr>';
+                return;
+            }
+            container.innerHTML = regularOrders.map(order => {
+                const statusClass = getStatusClass(order.status);
+                return `<tr>
+                    <td>${order.orderId || order.id}</td>
+                    <td>${new Date(order.orderDate).toLocaleDateString('en-IN')}</td>
+                    <td>${escapeHtml(order.customerName || 'Guest')}</td>
+                    <td>₹${(order.total || 0).toLocaleString('en-IN')}</td>
+                    <td><span class="status-badge ${statusClass}">${order.status || 'pending'}</span></td>
+                    <td>
+                        <select class="status-select" onchange="updateOrderStatus('${order.id}', this.value, false)">
+                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                            <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
+                            <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Shipped</option>
+                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                            <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="view-details" onclick="viewOrderDetails('${order.id}', false)"><i class="fas fa-eye"></i> View</button>
+                        <button class="delete-order-btn" onclick="deleteOrderItem('${order.id}', false)"><i class="fas fa-trash"></i> Del</button>
+                    </td>
+                </tr>`;
+            }).join('');
             updateStats();
+        }
+        
+        function renderCustomOrders() {
+            const container = document.getElementById('customOrdersList');
+            if (!container) return;
+            if (customOrders.length === 0) {
+                container.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">🎨 No custom design orders yet</td></tr>';
+                return;
+            }
+            container.innerHTML = customOrders.map(order => {
+                const statusClass = getStatusClass(order.status);
+                const firstItem = order.items?.[0] || {};
+                const frontImg = order.frontDesignImage || firstItem.frontDesignImage;
+                const backImg = order.backDesignImage || firstItem.backDesignImage;
+                const designPreview = frontImg ? `<div class="custom-design-thumb"><img src="${frontImg}" alt="design"></div>` : `<div class="custom-design-thumb"><i class="fas fa-palette"></i></div>`;
+                return `<tr class="custom-order-highlight">
+                    <td>${designPreview}</td>
+                    <td>${order.orderId || order.id}</td>
+                    <td>${new Date(order.orderDate).toLocaleDateString('en-IN')}</td>
+                    <td>${escapeHtml(order.customerName || 'Guest')}</td>
+                    <td>${firstItem.name || 'Custom T-Shirt'}</td>
+                    <td>${firstItem.size || 'M'} / ${firstItem.selectedColor || 'Black'}</td>
+                    <td>₹${(order.total || 0).toLocaleString('en-IN')}</td>
+                    <td><span class="status-badge ${statusClass}">${order.status || 'pending'}</span></td>
+                    <td>
+                        <select class="status-select" onchange="updateOrderStatus('${order.id}', this.value, true)">
+                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                            <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
+                            <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Shipped</option>
+                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                            <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="view-details" onclick="viewOrderDetails('${order.id}', true)"><i class="fas fa-eye"></i> View</button>
+                        <button class="delete-order-btn" onclick="deleteOrderItem('${order.id}', true)"><i class="fas fa-trash"></i> Del</button>
+                    </td>
+                </tr>`;
+            }).join('');
+            updateStats();
+        }
+        
+        function getStatusClass(status) {
+            switch(status) {
+                case 'confirmed': return 'status-confirmed';
+                case 'processing': return 'status-processing';
+                case 'shipped': return 'status-shipped';
+                case 'delivered': return 'status-delivered';
+                case 'cancelled': return 'status-cancelled';
+                default: return 'status-pending';
+            }
+        }
+        
+        async function updateOrderStatus(orderId, newStatus, isCustom) {
+            try {
+                await db.collection('orders').doc(orderId).update({ status: newStatus, updatedAt: new Date().toISOString() });
+                showToast(`✅ Order status updated to ${newStatus}`);
+                await loadAllData();
+            } catch(e) { showToast("Update failed", true); }
+        }
+        
+        async function deleteOrderItem(orderId, isCustom) {
+            if (confirm('⚠️ Delete this order permanently?')) {
+                try {
+                    await db.collection('orders').doc(orderId).delete();
+                    showToast('✅ Order deleted');
+                    await loadAllData();
+                } catch(e) { showToast("Delete failed", true); }
+            }
+        }
+        
+        function viewOrderDetails(orderId, isCustom) {
+            const order = isCustom ? customOrders.find(o => o.id == orderId) : regularOrders.find(o => o.id == orderId);
+            if (!order) return;
+            
+            const itemsHtml = (order.items || []).map(item => {
+                const isCustomItem = item.isCustomized || order.isCustomized;
+                const frontImg = item.frontDesignImage || order.frontDesignImage;
+                const backImg = item.backDesignImage || order.backDesignImage;
+                const designHtml = (frontImg || backImg) ? `
+                    <div class="design-preview-small">
+                        ${frontImg ? `<img src="${frontImg}" title="Front Design">` : ''}
+                        ${backImg ? `<img src="${backImg}" title="Back Design">` : ''}
+                    </div>
+                ` : '';
+                
+                return `
+                    <div class="order-item-with-img">
+                        <div class="order-product-img">
+                            ${frontImg ? `<img src="${frontImg}" alt="design">` : `<i class="fas fa-palette"></i>`}
+                        </div>
+                        <div class="order-item-info">
+                            <h4>${escapeHtml(item.name)} ${isCustomItem ? '<span class="custom-badge-detail"><i class="fas fa-paintbrush"></i> Custom Design</span>' : ''}</h4>
+                            ${item.size ? `<div>📏 Size: ${escapeHtml(item.size)}</div>` : ''}
+                            ${item.selectedColor ? `<div>🎨 Color: ${escapeHtml(item.selectedColor)}</div>` : ''}
+                            ${designHtml}
+                            <div>Quantity: ${item.quantity} × ₹${(item.price || 0).toLocaleString('en-IN')}</div>
+                        </div>
+                        <div class="order-item-price">₹${((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('orderDetailContent').innerHTML = `
+                <div class="order-detail-row"><strong>📋 Order ID:</strong> ${order.orderId || order.id}</div>
+                <div class="order-detail-row"><strong>📅 Date:</strong> ${new Date(order.orderDate).toLocaleString()}</div>
+                <div class="order-detail-row"><strong>📊 Status:</strong> <span class="status-badge ${getStatusClass(order.status)}">${order.status || 'Pending'}</span></div>
+                <div class="order-detail-row"><strong>💳 Payment:</strong> ${order.paymentMethod || 'Cash on Delivery'}</div>
+                ${order.isCustomized ? `<div class="order-detail-row"><strong>🎨 Order Type:</strong> <span style="color:#D4AF37;">✨ CUSTOM DESIGNED T-SHIRT</span></div>` : ''}
+                <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
+                <strong>👤 Customer Details:</strong>
+                <div class="order-detail-row"><strong>Name:</strong> ${order.customerName || 'Guest'}</div>
+                <div class="order-detail-row"><strong>📞 Phone:</strong> ${order.customerPhone || 'N/A'}</div>
+                <div class="order-detail-row"><strong>📍 Address:</strong> ${order.shippingAddress?.address || 'N/A'}, ${order.shippingAddress?.city || ''}, ${order.shippingAddress?.state || ''} - ${order.shippingAddress?.pincode || ''}</div>
+                <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
+                <strong>🛍️ Order Items:</strong>
+                ${itemsHtml || '<div>No items</div>'}
+                <div style="margin-top: 15px; border-top: 1px solid #D4AF37;"></div>
+                <div class="order-detail-row"><strong>💰 Total Amount:</strong> <span style="color:#D4AF37; font-size:20px;">₹${(order.total || 0).toLocaleString('en-IN')}</span></div>
+            `;
+            document.getElementById('orderModal').classList.add('show');
+        }
+        
+        function closeOrderModal() { document.getElementById('orderModal').classList.remove('show'); }
+        function closeEditModal() { document.getElementById('editModal').classList.remove('show'); currentEditProduct = null; }
+        
+        async function openEditProductModal(productId) {
+            currentEditProduct = products.find(p => p.id == productId);
+            if (!currentEditProduct) return;
+            if (!currentEditProduct.sizes) currentEditProduct.sizes = [];
+            if (!currentEditProduct.colors) currentEditProduct.colors = [];
+            if (!currentEditProduct.images) currentEditProduct.images = [];
+            if (!currentEditProduct.combos) currentEditProduct.combos = [];
+            
+            const modal = document.getElementById('editModal');
+            modal.innerHTML = `
+                <div class="edit-modal-content">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                        <h2 style="color:#D4AF37;">✏️ Edit Product</h2>
+                        <button class="close-order-modal" onclick="closeEditModal()">&times;</button>
+                    </div>
+                    <div class="form-group"><label>Product Name</label><input type="text" id="editName" value="${escapeHtml(currentEditProduct.name)}"></div>
+                    <div class="form-group"><label>Category</label><input type="text" id="editCategory" value="${escapeHtml(currentEditProduct.category || '')}"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Price (₹)</label><input type="number" id="editPrice" value="${currentEditProduct.price}"></div>
+                        <div class="form-group"><label>Badge</label><select id="editBadge"><option>Best Seller</option><option>Trending</option><option>New</option></select></div>
+                    </div>
+                    <div class="form-group"><label>Sizes</label><div class="chips-container" id="sizesContainer"></div><div class="add-section"><input type="text" id="newSize" placeholder="Size"><button class="add-btn" onclick="addSizeField()">+ Add</button></div></div>
+                    <div class="form-group"><label>Colors</label><div class="chips-container" id="colorsContainer"></div><div class="add-section"><input type="text" id="newColorName" placeholder="Color name"><input type="color" id="newColorCode"><button class="add-btn" onclick="addColorField()">+ Add</button></div></div>
+                    <div class="form-group"><label>Images</label><div class="image-preview-edit" id="imagesPreview"></div><input type="file" id="newImages" multiple accept="image/*"><button class="add-btn" onclick="uploadImages()">Upload</button></div>
+                    <div class="form-group"><label>Full Description</label><textarea id="editDesc" rows="3">${escapeHtml(currentEditProduct.fullDesc || '')}</textarea></div>
+                    <button class="save-edit-btn" onclick="saveProductEdit()">💾 Save Changes</button>
+                </div>
+            `;
+            renderEditChips();
+            modal.classList.add('show');
+        }
+        
+        function renderEditChips() {
+            const sizesContainer = document.getElementById('sizesContainer');
+            if (sizesContainer) {
+                sizesContainer.innerHTML = (currentEditProduct.sizes || []).map((s, i) => `<span class="chip">${escapeHtml(s)} <span class="remove-chip" onclick="removeSizeField(${i})">✕</span></span>`).join('');
+            }
+            const colorsContainer = document.getElementById('colorsContainer');
+            if (colorsContainer) {
+                colorsContainer.innerHTML = (currentEditProduct.colors || []).map((c, i) => `<span class="chip"><span class="color-dot-small" style="background:${c.code || '#D4AF37'}"></span> ${escapeHtml(c.name || c)} <span class="remove-chip" onclick="removeColorField(${i})">✕</span></span>`).join('');
+            }
+            const imagesPreview = document.getElementById('imagesPreview');
+            if (imagesPreview) {
+                imagesPreview.innerHTML = (currentEditProduct.images || []).map((img, i) => `<div class="edit-preview-img"><img src="${img}"><div class="remove-image-btn" onclick="removeImageField(${i})">✕</div></div>`).join('');
+            }
+        }
+        
+        function addSizeField() { const val = document.getElementById('newSize')?.value.trim().toUpperCase(); if(val && !currentEditProduct.sizes.includes(val)) { currentEditProduct.sizes.push(val); renderEditChips(); document.getElementById('newSize').value = ''; } }
+        function removeSizeField(i) { currentEditProduct.sizes.splice(i,1); renderEditChips(); }
+        function addColorField() { const name = document.getElementById('newColorName')?.value.trim(); const code = document.getElementById('newColorCode')?.value || '#D4AF37'; if(name) { currentEditProduct.colors.push({ name, code }); renderEditChips(); document.getElementById('newColorName').value = ''; } }
+        function removeColorField(i) { currentEditProduct.colors.splice(i,1); renderEditChips(); }
+        function removeImageField(i) { currentEditProduct.images.splice(i,1); renderEditChips(); }
+        
+        async function uploadImages() {
+            const files = document.getElementById('newImages')?.files;
+            if (!files || !files.length) return;
+            showToast("Compressing...");
+            const newImages = [];
+            for (const file of files) {
+                const compressed = await compressImage(file);
+                newImages.push(compressed);
+            }
+            currentEditProduct.images.push(...newImages);
+            renderEditChips();
+            document.getElementById('newImages').value = '';
+            showToast(`✅ ${newImages.length} images added`);
         }
         
         function compressImage(file) {
@@ -977,594 +802,93 @@
             });
         }
         
-        // ✅ CHANGED: Category is now a free text input (no dropdown)
-        function openEditModal(productId) {
-            currentEditProduct = products.find(p => p.id == productId);
-            if (!currentEditProduct) {
-                showToast("Product not found", true);
-                return;
-            }
-            if (!currentEditProduct.sizes) currentEditProduct.sizes = [];
-            if (!currentEditProduct.colors) currentEditProduct.colors = [];
-            if (!currentEditProduct.images) currentEditProduct.images = [];
-            if (!currentEditProduct.combos) currentEditProduct.combos = [];
-            renderEditModal();
-            document.getElementById('editModal').classList.add('show');
-        }
-        
-        function renderEditModal() {
-            const modal = document.getElementById('editModal');
-            if (!modal) return;
-            const sizesHtml = (currentEditProduct.sizes || []).map((size, idx) => `<span class="chip">${escapeHtml(size)} <span class="remove-chip" onclick="removeSize(${idx})">✕</span></span>`).join('');
-            const colorsHtml = (currentEditProduct.colors || []).map((color, idx) => {
-                const colorName = typeof color === 'object' ? color.name : color;
-                const colorCode = typeof color === 'object' ? color.code : '#D4AF37';
-                return `<span class="chip"><span class="color-dot-small" style="background: ${colorCode};"></span> ${escapeHtml(colorName)} <span class="remove-chip" onclick="removeColor(${idx})">✕</span></span>`;
-            }).join('');
-            const imagesHtml = (currentEditProduct.images || []).map((img, idx) => `<div class="edit-preview-img"><img src="${img}"><div class="remove-image-btn" onclick="removeImage(${idx})">✕</div></div>`).join('');
-            const combosHtml = (currentEditProduct.combos || []).map((combo, idx) => `<span class="chip">${combo.quantity} for ₹${combo.price} <span class="remove-chip" onclick="removeCombo(${idx})">✕</span></span>`).join('');
-            
-            modal.innerHTML = `
-                <div class="edit-modal-content">
-                    <div class="edit-modal-header">
-                        <h2><i class="fas fa-edit"></i> Edit Product: ${escapeHtml(currentEditProduct.name)}</h2>
-                        <button class="close-edit-modal" onclick="closeEditModal()">&times;</button>
-                    </div>
-                    <div class="form-group"><label>Product Name</label><input type="text" id="editProductName" value="${escapeHtml(currentEditProduct.name)}"></div>
-                    <!-- ✅ REPLACED dropdown with free text input -->
-                    <div class="form-group"><label>Category (Type anything: Saree, Mobile, Electronics, etc.)</label><input type="text" id="editCategory" value="${escapeHtml(currentEditProduct.category || '')}" placeholder="e.g., Saree, Kurta, Phone, Crystal, Furniture..."></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Offer Badge</label><select id="editBadge">
-                            <option value="Best Seller" ${currentEditProduct.badge === 'Best Seller' ? 'selected' : ''}>🔥 Best Seller</option>
-                            <option value="Trending" ${currentEditProduct.badge === 'Trending' ? 'selected' : ''}>⭐ Trending</option>
-                            <option value="New" ${currentEditProduct.badge === 'New' ? 'selected' : ''}>✨ New Arrival</option>
-                            <option value="Sale" ${currentEditProduct.badge === 'Sale' ? 'selected' : ''}>🎉 Sale</option>
-                            <option value="Limited" ${currentEditProduct.badge === 'Limited' ? 'selected' : ''}>💎 Limited</option>
-                        </select></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Price (₹)</label><input type="number" id="editPrice" value="${currentEditProduct.price}"></div>
-                        <div class="form-group"><label>Compare Price (MRP)</label><input type="number" id="editComparePrice" value="${currentEditProduct.comparePrice || ''}"></div>
-                    </div>
-                    <div class="form-group"><label><i class="fas fa-tshirt"></i> Sizes Available</label>
-                        <div class="chips-container">${sizesHtml || '<span style="color:#888;">No sizes added</span>'}</div>
-                        <div class="add-section"><input type="text" id="newSizeInput" placeholder="Enter size"><button class="add-btn" onclick="addSize()">+ Add Size</button></div>
-                    </div>
-                    <div class="form-group"><label><i class="fas fa-palette"></i> Colors Available</label>
-                        <div class="chips-container">${colorsHtml || '<span style="color:#888;">No colors added</span>'}</div>
-                        <div class="main-colors-container" id="mainColorList"></div>
-                        <div style="text-align:center; margin:10px 0;"><button type="button" class="add-btn" id="seeAllColorsBtn" style="background:rgba(212,175,55,0.2);"><i class="fas fa-eye"></i> See All Colors (200+)</button></div>
-                        <div id="fullColorGridPopup" style="display:none;" class="color-grid-popup">
-                            <div style="display:flex; justify-content:space-between;"><span style="color:#D4AF37;">🎨 All Colors</span><button type="button" id="closeColorGridBtn" style="background:none; border:none; color:white; font-size:24px;">&times;</button></div>
-                            <div id="fullColorGrid" class="color-grid"></div>
-                        </div>
-                        <div class="add-section"><input type="text" id="newColorName" placeholder="Custom color name"><input type="color" id="newColorCode" value="#D4AF37" style="width:60px;"><button class="add-btn" onclick="addColor()">+ Add Custom</button></div>
-                    </div>
-                    <div class="form-group"><label><i class="fas fa-images"></i> Product Images</label>
-                        <div class="image-preview-edit">${imagesHtml || '<span style="color:#888;">No images</span>'}</div>
-                        <div class="add-section"><input type="file" id="newImagesInput" multiple accept="image/*"><button class="add-btn" onclick="addImages()">Upload Images</button></div>
-                    </div>
-                    <div class="form-group"><label><i class="fas fa-gift"></i> Combo Offers</label>
-                        <div class="chips-container">${combosHtml || '<span style="color:#888;">No combos</span>'}</div>
-                        <div class="add-section"><input type="number" id="newComboQty" placeholder="Qty"><input type="number" id="newComboPrice" placeholder="Price"><button class="add-btn" onclick="addCombo()">+ Add Combo</button></div>
-                    </div>
-                    <div class="form-group"><label>Full Description</label><textarea id="editFullDesc" rows="3">${escapeHtml(currentEditProduct.fullDesc || '')}</textarea></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>Stock Quantity</label><input type="number" id="editStock" value="${currentEditProduct.stock || 10}"></div>
-                        <div class="form-group"><label>Status</label><select id="editStatus"><option value="active" ${currentEditProduct.status === 'active' ? 'selected' : ''}>✅ Active</option><option value="inactive" ${currentEditProduct.status === 'inactive' ? 'selected' : ''}>❌ Inactive</option></select></div>
-                    </div>
-                    <div class="form-group"><label>Video URL</label><input type="url" id="editVideoUrl" value="${currentEditProduct.videoUrl || ''}"></div>
-                    <button class="save-edit-btn" onclick="saveProductEdit()"><i class="fas fa-save"></i> Save Changes</button>
-                </div>
-            `;
-            renderMainColorButtons();
-        }
-        
-        function renderMainColorButtons() {
-            const container = document.getElementById('mainColorList');
-            if (!container) return;
-            container.innerHTML = mainColorsList.map(color => `
-                <div class="main-color-item" onclick="addColorFromMain('${escapeHtml(color.name)}', '${color.code}')">
-                    <div class="main-color-circle" style="background: ${color.code};"></div>
-                    <span class="main-color-name">${escapeHtml(color.name)}</span>
-                </div>
-            `).join('');
-            document.getElementById('seeAllColorsBtn')?.addEventListener('click', () => toggleFullColorGrid(true));
-            document.getElementById('closeColorGridBtn')?.addEventListener('click', () => toggleFullColorGrid(false));
-        }
-        
-        function toggleFullColorGrid(show) {
-            const gridPopup = document.getElementById('fullColorGridPopup');
-            if (!gridPopup) return;
-            if (show) {
-                const allColors = getAllColorsList();
-                const gridContainer = document.getElementById('fullColorGrid');
-                if (gridContainer) {
-                    gridContainer.innerHTML = allColors.map(color => `
-                        <div class="color-option" onclick="addColorFromFullGrid('${escapeHtml(color.name)}', '${color.code}')">
-                            <div class="color-circle" style="background: ${color.code};"></div>
-                            <span class="color-name">${escapeHtml(color.name).substring(0,12)}</span>
-                        </div>
-                    `).join('');
-                }
-                gridPopup.style.display = 'block';
-            } else {
-                gridPopup.style.display = 'none';
-            }
-        }
-        
-        function addColorFromMain(name, code) {
-            const exists = currentEditProduct.colors.some(c => (typeof c === 'object' ? c.name : c) === name);
-            if (!exists) {
-                currentEditProduct.colors.push({ name: name, code: code });
-                renderEditModal();
-                showToast(`✅ ${name} added!`);
-            } else { showToast(`⚠️ ${name} already exists`, true); }
-        }
-        
-        function addColorFromFullGrid(name, code) { addColorFromMain(name, code); }
-        
-        function addSize() {
-            const input = document.getElementById('newSizeInput');
-            const size = input.value.trim().toUpperCase();
-            if (size && !currentEditProduct.sizes.includes(size)) {
-                currentEditProduct.sizes.push(size);
-                renderEditModal();
-                input.value = '';
-            }
-        }
-        
-        function removeSize(index) { currentEditProduct.sizes.splice(index,1); renderEditModal(); }
-        
-        function addColor() {
-            const name = document.getElementById('newColorName').value.trim();
-            const code = document.getElementById('newColorCode').value;
-            if (name) {
-                const exists = currentEditProduct.colors.some(c => (typeof c === 'object' ? c.name : c) === name);
-                if (!exists) {
-                    currentEditProduct.colors.push({ name: name, code: code });
-                    renderEditModal();
-                    document.getElementById('newColorName').value = '';
-                    showToast(`✅ ${name} added!`);
-                } else { showToast('⚠️ Color exists', true); }
-            }
-        }
-        
-        function removeColor(index) { currentEditProduct.colors.splice(index,1); renderEditModal(); }
-        
-        function addCombo() {
-            const qty = parseInt(document.getElementById('newComboQty').value);
-            const price = parseInt(document.getElementById('newComboPrice').value);
-            if (qty && price) {
-                currentEditProduct.combos.push({ quantity: qty, price: price });
-                renderEditModal();
-                document.getElementById('newComboQty').value = '';
-                document.getElementById('newComboPrice').value = '';
-                showToast(`✅ Combo added: ${qty} for ₹${price}`);
-            }
-        }
-        
-        function removeCombo(index) { currentEditProduct.combos.splice(index,1); renderEditModal(); }
-        
-        async function addImages() {
-            const files = document.getElementById('newImagesInput').files;
-            if (!files.length) return;
-            showToast('⏳ Compressing...');
-            const newImages = [];
-            for (const file of files) newImages.push(await compressImage(file));
-            currentEditProduct.images.push(...newImages);
-            renderEditModal();
-            document.getElementById('newImagesInput').value = '';
-            showToast(`✅ ${newImages.length} image(s) added`);
-        }
-        
-        function removeImage(index) { currentEditProduct.images.splice(index,1); renderEditModal(); }
-        
         async function saveProductEdit() {
-            const updatedData = {
-                name: document.getElementById('editProductName').value.trim(),
-                category: document.getElementById('editCategory').value.trim() || "General",
-                badge: document.getElementById('editBadge').value,
-                price: parseInt(document.getElementById('editPrice').value) || 0,
-                comparePrice: parseInt(document.getElementById('editComparePrice').value) || 0,
+            const updated = {
+                name: document.getElementById('editName')?.value.trim(),
+                category: document.getElementById('editCategory')?.value.trim(),
+                price: parseInt(document.getElementById('editPrice')?.value) || 0,
+                badge: document.getElementById('editBadge')?.value,
                 sizes: currentEditProduct.sizes,
                 colors: currentEditProduct.colors,
-                combos: currentEditProduct.combos,
                 images: currentEditProduct.images,
-                fullDesc: document.getElementById('editFullDesc').value,
-                stock: parseInt(document.getElementById('editStock').value) || 0,
-                status: document.getElementById('editStatus').value,
-                videoUrl: document.getElementById('editVideoUrl').value,
+                fullDesc: document.getElementById('editDesc')?.value,
                 updatedAt: new Date().toISOString()
             };
-            const result = await updateProductInFirebase(currentEditProduct.id, updatedData);
-            if (result.success) {
-                showToast('✅ Product updated!');
+            try {
+                await db.collection('products').doc(currentEditProduct.id).update(updated);
+                showToast("✅ Product updated");
                 closeEditModal();
-                await loadData();
-            } else { showToast('❌ Update failed', true); }
+                await loadAllData();
+            } catch(e) { showToast("Update failed", true); }
         }
         
-        function closeEditModal() { document.getElementById('editModal').classList.remove('show'); currentEditProduct = null; }
-        
-        async function deleteProduct(id) {
-            if (confirm('⚠️ Delete permanently?')) {
-                const result = await deleteProductFromFirebase(id);
-                if (result.success) { showToast('✅ Deleted'); await loadData(); }
-                else { showToast('❌ Delete failed', true); }
+        async function deleteProductItem(id) {
+            if (confirm('Delete product?')) {
+                try {
+                    await db.collection('products').doc(id).delete();
+                    showToast("Deleted");
+                    await loadAllData();
+                } catch(e) { showToast("Error", true); }
             }
-        }
-        
-        function parseOrderDate(orderDateStr) {
-            if (!orderDateStr) return null;
-            try { return new Date(orderDateStr); } catch(e) { return null; }
-        }
-        
-        function isToday(orderDate) {
-            if (!orderDate) return false;
-            const today = new Date();
-            return orderDate.toDateString() === today.toDateString();
-        }
-        
-        function isThisWeek(orderDate) {
-            if (!orderDate) return false;
-            const today = new Date();
-            const startOfWeek = new Date(today);
-            startOfWeek.setDate(today.getDate() - today.getDay());
-            startOfWeek.setHours(0,0,0,0);
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
-            endOfWeek.setHours(23,59,59,999);
-            return orderDate >= startOfWeek && orderDate <= endOfWeek;
-        }
-        
-        function isThisMonth(orderDate) {
-            if (!orderDate) return false;
-            const today = new Date();
-            return orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
-        }
-        
-        function isWithinCustomRange(orderDate) {
-            if (!customStartDate || !orderDate) return true;
-            const startParts = customStartDate.split('/');
-            const startDate = new Date(parseInt(startParts[2]), parseInt(startParts[1]) - 1, parseInt(startParts[0]));
-            startDate.setHours(0,0,0,0);
-            if (customEndDate) {
-                const endParts = customEndDate.split('/');
-                const endDate = new Date(parseInt(endParts[2]), parseInt(endParts[1]) - 1, parseInt(endParts[0]));
-                endDate.setHours(23,59,59,999);
-                return orderDate >= startDate && orderDate <= endDate;
-            }
-            return orderDate.toDateString() === startDate.toDateString();
-        }
-        
-        function filterOrders() {
-            let filtered = [...orders];
-            if (currentStatusFilter !== 'all') {
-                filtered = filtered.filter(o => o.status === currentStatusFilter);
-            }
-            filtered = filtered.filter(o => {
-                const orderDate = parseOrderDate(o.orderDate);
-                if (!orderDate) return currentDateFilter === 'all';
-                if (currentDateFilter === 'today') return isToday(orderDate);
-                if (currentDateFilter === 'week') return isThisWeek(orderDate);
-                if (currentDateFilter === 'month') return isThisMonth(orderDate);
-                if (currentDateFilter === 'custom') return isWithinCustomRange(orderDate);
-                return true;
-            });
-            filtered.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
-            return filtered;
-        }
-        
-        function renderOrders() {
-            const container = document.getElementById('ordersList');
-            if (!container) return;
-            const filteredOrders = filterOrders();
-            if (filteredOrders.length === 0) {
-                container.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:40px;">📭 No orders found</td></tr>';
-                return;
-            }
-            container.innerHTML = filteredOrders.map(order => {
-                const statusBadgeClass = (() => {
-                    switch(order.status) {
-                        case 'confirmed': return 'status-confirmed';
-                        case 'processing': return 'status-processing';
-                        case 'shipped': return 'status-shipped';
-                        case 'delivered': return 'status-delivered';
-                        case 'cancelled': return 'status-cancelled';
-                        default: return 'status-confirmed';
-                    }
-                })();
-                return `
-                    <tr>
-                        <td>${order.orderId || order.id}</td>
-                        <td>${new Date(order.orderDate).toLocaleDateString('en-IN')}</td>
-                        <td>${order.customerName || 'Guest'}</td>
-                        <td>₹${(order.total || 0).toLocaleString('en-IN')}</td>
-                        <td><span class="status-badge ${statusBadgeClass}">${order.status || 'Confirmed'}</span></td>
-                        <td><select class="status-select" onchange="updateOrderStatus('${order.id}', this.value)">
-                            <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
-                            <option value="processing" ${order.status === 'processing' ? 'selected' : ''}>Processing</option>
-                            <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Shipped</option>
-                            <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
-                            <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                        </select></td>
-                        <td><button class="view-details" onclick="viewOrderDetails('${order.id}')"><i class="fas fa-eye"></i> View</button>
-                        <button class="delete-order-btn" onclick="deleteOrder('${order.id}')"><i class="fas fa-trash"></i> Delete</button></td>
-                    </tr>
-                `;
-            }).join('');
-            updateStats();
-        }
-        
-        function viewOrderDetails(orderId) {
-            const order = orders.find(o => o.id == orderId);
-            if (!order) return;
-            
-            const itemsHtml = (order.items || []).map(item => {
-                const product = products.find(p => p.id == item.id);
-                const hasImage = product && product.images && product.images.length > 0;
-                const imageUrl = hasImage ? product.images[0] : null;
-                const itemIcon = product ? (product.icon || 'fa-gem') : 'fa-gem';
-                const itemSize = item.size || item.selectedSize || '';
-                const itemColor = item.color || item.selectedColor || '';
-                const colorCode = getColorCode(itemColor);
-                
-                let comboDisplay = '';
-                if (item.combo) {
-                    comboDisplay = `<div class="combo-badge-detail"><i class="fas fa-gift"></i> ${escapeHtml(item.combo)}</div>`;
-                } else if (item.isCombo && item.comboMultiplier) {
-                    comboDisplay = `<div class="combo-badge-detail"><i class="fas fa-gift"></i> Combo: ${item.comboMultiplier} items per pack</div>`;
-                } else if (item.comboInfo) {
-                    comboDisplay = `<div class="combo-badge-detail"><i class="fas fa-gift"></i> ${escapeHtml(item.comboInfo)}</div>`;
-                }
-                
-                return `
-                    <div class="order-item-with-img">
-                        <div class="order-product-img">
-                            ${imageUrl ? `<img src="${imageUrl}" alt="${escapeHtml(item.name)}">` : `<i class="fas ${itemIcon}"></i>`}
-                        </div>
-                        <div class="order-item-info">
-                            <h4>${escapeHtml(item.name)}</h4>
-                            ${itemSize ? `<div class="order-item-size"><i class="fas fa-tshirt"></i> Size: ${escapeHtml(itemSize)}</div>` : ''}
-                            ${itemColor ? `<div class="order-item-color"><span class="color-swatch-small" style="background: ${colorCode}; border:1px solid rgba(255,255,255,0.3);"></span> Color: ${escapeHtml(itemColor)}</div>` : ''}
-                            ${comboDisplay}
-                            <p>Quantity: ${item.quantity} × ₹${(item.price || 0).toLocaleString('en-IN')}</p>
-                        </div>
-                        <div class="order-item-price">₹${((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</div>
-                    </div>
-                `;
-            }).join('');
-            
-            const statusBadgeClass = (() => {
-                switch(order.status) {
-                    case 'confirmed': return 'status-confirmed';
-                    case 'processing': return 'status-processing';
-                    case 'shipped': return 'status-shipped';
-                    case 'delivered': return 'status-delivered';
-                    case 'cancelled': return 'status-cancelled';
-                    default: return 'status-confirmed';
-                }
-            })();
-            
-            document.getElementById('orderDetailContent').innerHTML = `
-                <div class="order-detail-row"><strong>📋 Order ID:</strong> ${order.orderId || order.id}</div>
-                <div class="order-detail-row"><strong>📅 Date:</strong> ${new Date(order.orderDate).toLocaleString()}</div>
-                <div class="order-detail-row"><strong>📊 Status:</strong> <span class="status-badge ${statusBadgeClass}">${order.status || 'Confirmed'}</span></div>
-                <div class="order-detail-row"><strong>💳 Payment:</strong> ${order.paymentMethod || 'Cash on Delivery'}</div>
-                <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
-                <strong>👤 Customer Details:</strong>
-                <div class="order-detail-row"><strong>Name:</strong> ${order.customerName || 'Guest'}</div>
-                <div class="order-detail-row"><strong>📞 Phone:</strong> ${order.customerPhone || 'N/A'}</div>
-                <div class="order-detail-row"><strong>✉️ Email:</strong> ${order.customerEmail || 'N/A'}</div>
-                <div class="order-detail-row"><strong>📍 Address:</strong> ${order.shippingAddress?.address || 'N/A'}, ${order.shippingAddress?.city || ''}, ${order.shippingAddress?.state || ''} - ${order.shippingAddress?.pincode || ''}</div>
-                <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
-                <strong>🛍️ Order Items:</strong>
-                ${itemsHtml || '<div class="order-detail-row">No items found</div>'}
-                <div style="margin-top: 15px; border-top: 1px solid rgba(212,175,55,0.3);"></div>
-                <div class="order-detail-row"><strong>💰 Total Amount:</strong> <span style="color:#D4AF37; font-size:18px;">₹${(order.total || 0).toLocaleString('en-IN')}</span></div>
-            `;
-            document.getElementById('orderModal').classList.add('show');
-        }
-        
-        function closeOrderModal() { document.getElementById('orderModal').classList.remove('show'); }
-        
-        async function updateOrderStatus(orderId, newStatus) {
-            const result = await updateOrderStatusInFirebase(orderId, newStatus);
-            if (result.success) {
-                showToast(`✅ Order status updated to ${newStatus}`);
-                await loadData();
-            } else { showToast('❌ Update failed', true); }
-        }
-        
-        async function deleteOrder(orderId) {
-            if (confirm('⚠️ Delete this order permanently?')) {
-                const result = await deleteOrderFromFirebase(orderId);
-                if (result.success) { showToast('✅ Order deleted'); await loadData(); }
-                else { showToast('❌ Delete failed', true); }
-            }
-        }
-        
-        function openDatePicker() { document.getElementById('datepickerModal').classList.add('show'); }
-        function closeDatePicker() { document.getElementById('datepickerModal').classList.remove('show'); }
-        
-        function updateDatePickerDisplay() {
-            const startDisplay = document.getElementById('startDateDisplay');
-            const endDisplay = document.getElementById('endDateDisplay');
-            if (startDisplay) {
-                if (tempStartDate) startDisplay.innerHTML = `<span class="selected-date">${tempStartDate}</span>`;
-                else startDisplay.innerHTML = `<span class="placeholder-text">dd/mm/yyyy</span>`;
-            }
-            if (endDisplay) {
-                if (tempEndDate) endDisplay.innerHTML = `<span class="selected-date">${tempEndDate}</span>`;
-                else endDisplay.innerHTML = `<span class="placeholder-text">dd/mm/yyyy (Optional)</span>`;
-            }
-        }
-        
-        function showNativeDatePicker(type) {
-            const input = document.createElement('input');
-            input.type = 'date';
-            input.style.position = 'absolute';
-            input.style.opacity = '0';
-            document.body.appendChild(input);
-            input.addEventListener('change', (e) => {
-                const value = e.target.value;
-                if (value) {
-                    const parts = value.split('-');
-                    const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                    if (type === 'start') tempStartDate = formattedDate;
-                    else tempEndDate = formattedDate;
-                    updateDatePickerDisplay();
-                }
-                document.body.removeChild(input);
-            });
-            input.showPicker();
-        }
-        
-        function setStartDate() { showNativeDatePicker('start'); }
-        function setEndDate() { showNativeDatePicker('end'); }
-        
-        function applyDateRange() {
-            if (!tempStartDate) { showToast('❌ Please select start date', true); return; }
-            customStartDate = tempStartDate;
-            customEndDate = tempEndDate || '';
-            currentDateFilter = 'custom';
-            const dateRangeText = document.getElementById('dateRangeText');
-            if (dateRangeText) {
-                if (customEndDate) dateRangeText.innerText = `${customStartDate} to ${customEndDate}`;
-                else dateRangeText.innerText = `${customStartDate}`;
-            }
-            document.querySelectorAll('.date-filter-btn').forEach(btn => btn.classList.remove('active'));
-            closeDatePicker();
-            renderOrders();
-            showToast(`📅 Showing orders from ${customStartDate}${customEndDate ? ' to ' + customEndDate : ''}`);
-        }
-        
-        function clearDateRange() {
-            customStartDate = ''; customEndDate = ''; tempStartDate = ''; tempEndDate = '';
-            currentDateFilter = 'all';
-            const dateRangeText = document.getElementById('dateRangeText');
-            if (dateRangeText) dateRangeText.innerText = 'Select Date Range';
-            document.querySelectorAll('.date-filter-btn').forEach(btn => {
-                if (btn.getAttribute('data-filter') === 'all') btn.classList.add('active');
-                else btn.classList.remove('active');
-            });
-            renderOrders();
-            showToast('📅 Date filter cleared');
-        }
-        
-        function applyDateFilter(filter) {
-            currentDateFilter = filter;
-            if (filter !== 'custom') { customStartDate = ''; customEndDate = ''; 
-                const dateRangeText = document.getElementById('dateRangeText');
-                if (dateRangeText) dateRangeText.innerText = 'Select Date Range';
-            }
-            document.querySelectorAll('.date-filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-filter') === filter) btn.classList.add('active');
-            });
-            renderOrders();
-        }
-        
-        function applyStatusFilter(filter) {
-            currentStatusFilter = filter;
-            document.querySelectorAll('.status-filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('data-status') === filter) btn.classList.add('active');
-            });
-            renderOrders();
         }
         
         function goToAddProduct() { window.location.href = 'admin-add-product.html'; }
         function openReturnManagement() { window.location.href = 'return.html'; }
-        function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m] || m)); }
+        function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
         
         function renderDashboard() {
             document.getElementById('app').innerHTML = `
                 <div class="header">
-                    <div class="logo"><h1>VEDANTA ADMIN <span class="sync-badge"><i class="fas fa-cloud-upload-alt"></i> Cloud Sync</span></h1></div>
+                    <div class="logo"><h1>VEDANTA ADMIN <span style="font-size:10px;">Custom + Regular</span></h1></div>
                     <div class="header-buttons">
-                        <button class="return-manage-btn" id="returnManageBtn"><i class="fas fa-undo-alt"></i> Return Requests</button>
-                        <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                        <button class="custom-orders-btn" id="customOrdersTabBtn"><i class="fas fa-palette"></i> Custom Orders</button>
+                        <button class="return-manage-btn" id="returnManageBtn"><i class="fas fa-undo-alt"></i> Returns</button>
+                        <button class="logout-btn" id="logoutBtn">Logout</button>
                     </div>
                 </div>
                 <div class="stats-grid">
-                    <div class="stat-card"><i class="fas fa-box"></i><div class="stat-number" id="totalProducts">0</div><div class="stat-label">Total Products</div></div>
-                    <div class="stat-card"><i class="fas fa-shopping-cart"></i><div class="stat-number" id="totalOrders">0</div><div class="stat-label">Total Orders</div></div>
-                    <div class="stat-card"><i class="fas fa-rupee-sign"></i><div class="stat-number" id="totalRevenue">0</div><div class="stat-label">Total Revenue</div></div>
-                    <div class="stat-card"><i class="fas fa-users"></i><div class="stat-number" id="totalCustomers">0</div><div class="stat-label">Customers</div></div>
+                    <div class="stat-card"><i class="fas fa-box"></i><div class="stat-number" id="totalProducts">0</div><div class="stat-label">Products</div></div>
+                    <div class="stat-card"><i class="fas fa-shopping-cart"></i><div class="stat-number" id="totalRegularOrders">0</div><div class="stat-label">Regular Orders</div></div>
+                    <div class="stat-card"><i class="fas fa-paintbrush"></i><div class="stat-number" id="totalCustomOrders">0</div><div class="stat-label">Custom Orders</div></div>
+                    <div class="stat-card"><i class="fas fa-rupee-sign"></i><div class="stat-number" id="totalRevenueRegular">₹0</div><div class="stat-label">Regular Revenue</div></div>
+                    <div class="stat-card"><i class="fas fa-star"></i><div class="stat-number" id="totalRevenueCustom">₹0</div><div class="stat-label">Custom Revenue</div></div>
                 </div>
                 <div class="tabs">
                     <button class="tab-btn active" data-tab="products">📦 Products</button>
-                    <button class="tab-btn" data-tab="orders">📋 Orders</button>
+                    <button class="tab-btn" data-tab="regular">📋 Regular Orders</button>
+                    <button class="tab-btn" data-tab="custom">🎨 Custom Orders</button>
                 </div>
                 <div class="tab-content active" id="productsTab">
-                    <div class="add-product-header"><h3><i class="fas fa-boxes"></i> All Products</h3><button class="add-product-link" id="addProductBtn"><i class="fas fa-plus-circle"></i> Add New Product</button></div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+                        <h3><i class="fas fa-tshirt"></i> All Products</h3>
+                        <button class="add-product-link" id="addProductBtn"><i class="fas fa-plus"></i> Add New Product</button>
+                    </div>
                     <div class="products-list" id="productsList"></div>
                 </div>
-                <div class="tab-content" id="ordersTab">
-                    <div class="order-filters">
-                        <div class="filter-group">
-                            <span style="color:#888;">📅 Quick Date:</span>
-                            <button class="filter-btn date-filter-btn active" data-filter="all" onclick="applyDateFilter('all')">All Orders</button>
-                            <button class="filter-btn date-filter-btn" data-filter="today" onclick="applyDateFilter('today')">Today</button>
-                            <button class="filter-btn date-filter-btn" data-filter="week" onclick="applyDateFilter('week')">This Week</button>
-                            <button class="filter-btn date-filter-btn" data-filter="month" onclick="applyDateFilter('month')">This Month</button>
-                        </div>
-                        <div class="filter-group">
-                            <span style="color:#888;">📅 Custom Range:</span>
-                            <div class="date-range-box" onclick="openDatePicker()"><i class="fas fa-calendar-alt"></i><span class="date-range-text" id="dateRangeText">Select Date Range</span><i class="fas fa-chevron-down"></i></div>
-                            <button class="filter-btn" onclick="clearDateRange()" style="background:rgba(244,67,54,0.2); color:#F44336;"><i class="fas fa-times"></i> Clear</button>
-                        </div>
-                        <div class="filter-group">
-                            <span style="color:#888;">📊 Status:</span>
-                            <button class="filter-btn status-filter-btn active" data-status="all" onclick="applyStatusFilter('all')">All</button>
-                            <button class="filter-btn status-filter-btn" data-status="confirmed" onclick="applyStatusFilter('confirmed')">Confirmed</button>
-                            <button class="filter-btn status-filter-btn" data-status="processing" onclick="applyStatusFilter('processing')">Processing</button>
-                            <button class="filter-btn status-filter-btn" data-status="shipped" onclick="applyStatusFilter('shipped')">Shipped</button>
-                            <button class="filter-btn status-filter-btn" data-status="delivered" onclick="applyStatusFilter('delivered')">Delivered</button>
-                            <button class="filter-btn status-filter-btn" data-status="cancelled" onclick="applyStatusFilter('cancelled')">Cancelled</button>
-                        </div>
-                    </div>
-                    <div class="orders-table"><table><thead><tr><th>Order ID</th><th>Date</th><th>Customer</th><th>Amount</th><th>Status</th><th>Update</th><th>Actions</th></tr></thead><tbody id="ordersList"></tbody>}</div>
+                <div class="tab-content" id="regularTab">
+                    <div class="order-filters"><div class="filter-group"><span>📋 Regular Store Orders</span></div></div>
+                    <div class="orders-table"><table><thead><tr><th>Order ID</th><th>Date</th><th>Customer</th><th>Amount</th><th>Status</th><th>Update</th><th>Actions</th></tr></thead><tbody id="regularOrdersList"></tbody></table></div>
+                </div>
+                <div class="tab-content" id="customTab">
+                    <div class="order-filters"><div class="filter-group"><span>🎨 Custom Designed T-Shirt Orders</span><span style="background:#D4AF37; color:#050508; padding:4px 12px; border-radius:20px; font-size:11px;">User uploaded front+back designs</span></div></div>
+                    <div class="orders-table"><table><thead><tr><th>Design</th><th>Order ID</th><th>Date</th><th>Customer</th><th>Product</th><th>Size/Color</th><th>Amount</th><th>Status</th><th>Update</th><th>Actions</th></tr></thead><tbody id="customOrdersList"></tbody></table></div>
                 </div>
                 <div id="editModal" class="edit-modal"></div>
-                <div id="orderModal" class="order-modal"><div class="order-modal-content"><div class="order-modal-header"><h3><i class="fas fa-receipt"></i> Order Details</h3><button class="close-order-modal" onclick="closeOrderModal()">&times;</button></div><div id="orderDetailContent"></div></div></div>
+                <div id="orderModal" class="order-modal"><div class="order-modal-content"><div class="order-modal-header"><h3>📄 Order Details</h3><button class="close-order-modal" onclick="closeOrderModal()">&times;</button></div><div id="orderDetailContent"></div></div></div>
             `;
-            
-            const datepickerModal = document.createElement('div'); 
-            datepickerModal.id = 'datepickerModal'; 
-            datepickerModal.className = 'datepicker-modal'; 
-            datepickerModal.innerHTML = `
-                <div class="datepicker-content">
-                    <h3><i class="fas fa-calendar-alt"></i> Select Date Range</h3>
-                    <div class="datepicker-input-group"><label>Start Date</label><div class="clickable-date-input" onclick="setStartDate()"><span id="startDateDisplay"><span class="placeholder-text">dd/mm/yyyy</span></span><i class="fas fa-calendar"></i></div></div>
-                    <div class="datepicker-input-group"><label>End Date (Optional)</label><div class="clickable-date-input" onclick="setEndDate()"><span id="endDateDisplay"><span class="placeholder-text">dd/mm/yyyy (Optional)</span></span><i class="fas fa-calendar"></i></div></div>
-                    <div class="datepicker-buttons"><button class="datepicker-cancel" onclick="closeDatePicker()">Cancel</button><button class="datepicker-apply" onclick="applyDateRange()">Apply</button></div>
-                </div>
-            `;
-            document.body.appendChild(datepickerModal);
             
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
                     document.getElementById(`${btn.dataset.tab}Tab`).classList.add('active');
-                    if (btn.dataset.tab === 'orders') renderOrders();
                 });
             });
-            
             document.getElementById('addProductBtn')?.addEventListener('click', goToAddProduct);
-            document.getElementById('logoutBtn')?.addEventListener('click', () => {
-                localStorage.removeItem('adminLoggedIn');
-                isLoggedIn = false;
-                renderLoginPage();
-            });
+            document.getElementById('logoutBtn')?.addEventListener('click', () => { localStorage.removeItem('adminLoggedIn'); isLoggedIn = false; renderLoginPage(); });
             document.getElementById('returnManageBtn')?.addEventListener('click', openReturnManagement);
-            
-            loadFromCache();
-            loadData();
+            loadAllData();
         }
         
         function renderLoginPage() {
@@ -1572,60 +896,42 @@
                 <div class="login-container"><div class="login-card"><h2>VEDANTA ADMIN</h2><p>Enter credentials</p>
                 <div class="input-group"><label>Username</label><input type="text" id="adminUsername"></div>
                 <div class="input-group"><label>Password</label><input type="password" id="adminPassword"></div>
-                <button class="login-btn" id="loginBtn">Login</button>
-                <div class="error-msg" id="errorMsg" style="color:#F44336; text-align:center; margin-top:15px; display:none;">❌ Invalid credentials</div></div></div>
+                <button class="login-btn" id="loginBtn">Login</button></div></div>
             `;
             document.getElementById('loginBtn').addEventListener('click', () => {
                 const u = document.getElementById('adminUsername').value.trim();
                 const p = document.getElementById('adminPassword').value.trim();
                 if (u === ADMIN_USERNAME && p === ADMIN_PASSWORD) {
                     localStorage.setItem('adminLoggedIn', 'true');
-                    showToast('✅ Login success!');
-                    isLoggedIn = true;
+                    showToast('Login success');
                     renderDashboard();
-                } else {
-                    document.getElementById('errorMsg').style.display = 'block';
-                    setTimeout(() => document.getElementById('errorMsg').style.display = 'none', 2000);
-                }
+                } else { showToast('Invalid credentials', true); }
             });
         }
         
-        // Make functions global
-        window.openEditModal = openEditModal;
+        // Make globals accessible
+        window.openEditProductModal = openEditProductModal;
         window.closeEditModal = closeEditModal;
         window.saveProductEdit = saveProductEdit;
-        window.deleteProduct = deleteProduct;
+        window.deleteProductItem = deleteProductItem;
         window.updateOrderStatus = updateOrderStatus;
-        window.deleteOrder = deleteOrder;
+        window.deleteOrderItem = deleteOrderItem;
         window.viewOrderDetails = viewOrderDetails;
         window.closeOrderModal = closeOrderModal;
         window.goToAddProduct = goToAddProduct;
-        window.addSize = addSize;
-        window.removeSize = removeSize;
-        window.addColor = addColor;
-        window.removeColor = removeColor;
-        window.addCombo = addCombo;
-        window.removeCombo = removeCombo;
-        window.addImages = addImages;
-        window.removeImage = removeImage;
-        window.addColorFromMain = addColorFromMain;
-        window.addColorFromFullGrid = addColorFromFullGrid;
-        window.toggleFullColorGrid = toggleFullColorGrid;
-        window.applyDateFilter = applyDateFilter;
-        window.applyStatusFilter = applyStatusFilter;
-        window.openDatePicker = openDatePicker;
-        window.closeDatePicker = closeDatePicker;
-        window.applyDateRange = applyDateRange;
-        window.clearDateRange = clearDateRange;
-        window.setStartDate = setStartDate;
-        window.setEndDate = setEndDate;
+        window.addSizeField = addSizeField;
+        window.removeSizeField = removeSizeField;
+        window.addColorField = addColorField;
+        window.removeColorField = removeColorField;
+        window.uploadImages = uploadImages;
+        window.removeImageField = removeImageField;
         
         if (isLoggedIn) renderDashboard();
         else renderLoginPage();
         
         if (typeof db !== 'undefined') {
-            db.collection('products').onSnapshot(() => { if (isLoggedIn) loadData(); });
-            db.collection('orders').onSnapshot(() => { if (isLoggedIn) loadData(); });
+            db.collection('products').onSnapshot(() => { if (isLoggedIn) loadAllData(); });
+            db.collection('orders').onSnapshot(() => { if (isLoggedIn) loadAllData(); });
         }
     </script>
 </body>
