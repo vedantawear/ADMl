@@ -167,7 +167,7 @@
         .edit-btn { background: rgba(33,150,243,0.2); color: #2196F3; }
         .delete-btn { background: rgba(244,67,54,0.2); color: #F44336; }
         
-        /* Custom Orders Table */
+        /* Orders Table */
         .orders-table { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -186,6 +186,18 @@
         }
         .custom-design-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .custom-design-thumb i { font-size: 25px; color: #D4AF37; }
+        /* Regular order product image thumb */
+        .product-order-thumb {
+            width: 50px;
+            height: 50px;
+            background: #0E0E14;
+            border-radius: 12px;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .product-order-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .status-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -282,7 +294,6 @@
             display: inline-block;
             margin: 5px 0;
         }
-        /* BIG DESIGN PREVIEW MODAL STYLES */
         .design-preview-large {
             display: flex;
             flex-direction: column;
@@ -388,7 +399,7 @@
             font-size: 14px;
             border: none;
         }
-        .edit-modal, .datepicker-modal {
+        .edit-modal {
             display: none;
             position: fixed;
             top: 0;
@@ -402,8 +413,8 @@
             overflow-y: auto;
             padding: 20px;
         }
-        .edit-modal.show, .datepicker-modal.show { display: flex; }
-        .edit-modal-content, .datepicker-content {
+        .edit-modal.show { display: flex; }
+        .edit-modal-content {
             background: rgba(15,15,22,0.98);
             backdrop-filter: blur(20px);
             border-radius: 32px;
@@ -559,7 +570,7 @@
             document.getElementById('totalRevenueCustom') && (document.getElementById('totalRevenueCustom').innerText = '₹' + totalRevenueCustom.toLocaleString('en-IN'));
         }
         
-        function renderProducts() { /* unchanged product rendering */ 
+        function renderProducts() {
             const container = document.getElementById('productsList');
             if (!container) return;
             if (products.length === 0) {
@@ -582,24 +593,50 @@
             `).join('');
         }
         
-        function renderRegularOrders() { /* unchanged regular orders */ 
+        // Helper: get product image for regular order item
+        function getProductImageForItem(item) {
+            if (item.imageUrl) return item.imageUrl;
+            if (item.productImage) return item.productImage;
+            if (item.images && item.images[0]) return item.images[0];
+            if (item.productId) {
+                const foundProduct = products.find(p => p.id === item.productId);
+                if (foundProduct && foundProduct.images && foundProduct.images[0]) return foundProduct.images[0];
+            }
+            return null;
+        }
+        
+        function renderRegularOrders() {
             const container = document.getElementById('regularOrdersList');
             if (!container) return;
-            if (regularOrders.length === 0) { container.innerHTML = '<tr><td colspan="7" style="text-align:center;">📭 No regular orders found</td></tr>'; return; }
-            container.innerHTML = regularOrders.map(order => `<tr>
-                <td>${order.orderId || order.id}</td><td>${new Date(order.orderDate).toLocaleDateString('en-IN')}</td>
-                <td>${escapeHtml(order.customerName || 'Guest')}</td><td>₹${(order.total || 0).toLocaleString('en-IN')}</td>
-                <td><span class="status-badge ${getStatusClass(order.status)}">${order.status || 'pending'}</span></td>
-                <td><select class="status-select" onchange="updateOrderStatus('${order.id}', this.value, false)">${['pending','confirmed','processing','shipped','delivered','cancelled'].map(s => `<option ${order.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
-                <td><button class="view-details" onclick="viewOrderDetails('${order.id}', false)">View</button><button class="delete-order-btn" onclick="deleteOrderItem('${order.id}', false)">Del</button></td>
-            </tr>`).join('');
+            if (regularOrders.length === 0) {
+                container.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">📭 No regular orders found</td></td>';
+                return;
+            }
+            container.innerHTML = regularOrders.map(order => {
+                const firstItem = order.items?.[0] || {};
+                const productImg = getProductImageForItem(firstItem);
+                const imageHtml = productImg ? `<div class="product-order-thumb"><img src="${productImg}" alt="product"></div>` : `<div class="product-order-thumb"><i class="fas fa-tshirt"></i></div>`;
+                return `<tr>
+                    <td>${imageHtml}</td>
+                    <td>${order.orderId || order.id}</td>
+                    <td>${new Date(order.orderDate).toLocaleDateString('en-IN')}</td>
+                    <td>${escapeHtml(order.customerName || 'Guest')}</td>
+                    <td>₹${(order.total || 0).toLocaleString('en-IN')}</td>
+                    <td><span class="status-badge ${getStatusClass(order.status)}">${order.status || 'pending'}</span></td>
+                    <td><select class="status-select" onchange="updateOrderStatus('${order.id}', this.value, false)">${['pending','confirmed','processing','shipped','delivered','cancelled'].map(s => `<option ${order.status===s?'selected':''}>${s}</option>`).join('')}</select></td>
+                    <td><button class="view-details" onclick="viewOrderDetails('${order.id}', false)">View</button><button class="delete-order-btn" onclick="deleteOrderItem('${order.id}', false)">Del</button></td>
+                </tr>`;
+            }).join('');
             updateStats();
         }
         
         function renderCustomOrders() {
             const container = document.getElementById('customOrdersList');
             if (!container) return;
-            if (customOrders.length === 0) { container.innerHTML = '<tr><td colspan="10" style="text-align:center;">🎨 No custom design orders yet</td></tr>'; return; }
+            if (customOrders.length === 0) {
+                container.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:40px;">🎨 No custom design orders yet</td></tr>';
+                return;
+            }
             container.innerHTML = customOrders.map(order => {
                 const firstItem = order.items?.[0] || {};
                 const frontImg = order.frontDesignImage || firstItem.frontDesignImage;
@@ -647,23 +684,25 @@
                 const frontImg = item.frontDesignImage || order.frontDesignImage;
                 const backImg = item.backDesignImage || order.backDesignImage;
                 const printMethodVal = order.printMethod || item.printMethod || 'Standard Print';
+                const productImage = getProductImageForItem(item);
+                const productImgHtml = productImage ? `<img src="${productImage}" alt="product">` : `<i class="fas fa-tshirt"></i>`;
                 const designLargeHtml = (frontImg || backImg) ? `
                     <div class="design-preview-large">
-                        ${frontImg ? `<div class="design-card"><h5><i class="fas fa-image"></i> FRONT DESIGN (High Resolution)</h5><img src="${frontImg}" alt="Front Design" onclick="window.open(this.src)"></div>` : ''}
-                        ${backImg ? `<div class="design-card"><h5><i class="fas fa-image"></i> BACK DESIGN (High Resolution)</h5><img src="${backImg}" alt="Back Design" onclick="window.open(this.src)"></div>` : ''}
+                        ${frontImg ? `<div class="design-card"><h5><i class="fas fa-image"></i> FRONT DESIGN</h5><img src="${frontImg}" onclick="window.open(this.src)"></div>` : ''}
+                        ${backImg ? `<div class="design-card"><h5><i class="fas fa-image"></i> BACK DESIGN</h5><img src="${backImg}" onclick="window.open(this.src)"></div>` : ''}
                     </div>
                 ` : '';
                 
                 return `
                     <div class="order-item-with-img">
                         <div class="order-product-img">
-                            ${frontImg ? `<img src="${frontImg}" alt="design">` : `<i class="fas fa-palette"></i>`}
+                            ${productImgHtml}
                         </div>
                         <div class="order-item-info">
                             <h4>${escapeHtml(item.name)} ${isCustomItem ? '<span class="custom-badge-detail"><i class="fas fa-paintbrush"></i> Custom Design</span>' : ''}</h4>
                             ${item.size ? `<div>📏 Size: ${escapeHtml(item.size)}</div>` : ''}
                             ${item.selectedColor ? `<div>🎨 Color: ${escapeHtml(item.selectedColor)}</div>` : ''}
-                            <div><i class="fas fa-print"></i> Print Method: <strong style="color:#FFD966;">${escapeHtml(printMethodVal)}</strong></div>
+                            ${isCustomItem ? `<div><i class="fas fa-print"></i> Print Method: <strong style="color:#FFD966;">${escapeHtml(printMethodVal)}</strong></div>` : ''}
                             ${designLargeHtml}
                             <div>Quantity: ${item.quantity} × ₹${(item.price || 0).toLocaleString('en-IN')}</div>
                         </div>
@@ -673,7 +712,7 @@
             }).join('');
             
             const firstItemGlobal = order.items?.[0] || {};
-            const globalPrintMethod = order.printMethod || firstItemGlobal.printMethod || 'Not specified';
+            const globalPrintMethod = order.printMethod || firstItemGlobal.printMethod;
             const globalFront = order.frontDesignImage || firstItemGlobal.frontDesignImage;
             const globalBack = order.backDesignImage || firstItemGlobal.backDesignImage;
             const globalDesignBlock = (globalFront || globalBack) ? `
@@ -688,7 +727,7 @@
                 <div class="order-detail-row"><strong>📅 Date:</strong> ${new Date(order.orderDate).toLocaleString()}</div>
                 <div class="order-detail-row"><strong>📊 Status:</strong> <span class="status-badge ${getStatusClass(order.status)}">${order.status || 'Pending'}</span></div>
                 <div class="order-detail-row"><strong>💳 Payment:</strong> ${order.paymentMethod || 'Cash on Delivery'}</div>
-                ${order.isCustomized ? `<div class="order-detail-row"><strong>🖨️ Print Method:</strong> <span style="color:#FFD966; font-weight:bold;">${escapeHtml(globalPrintMethod)}</span></div>` : ''}
+                ${order.isCustomized && globalPrintMethod ? `<div class="order-detail-row"><strong>🖨️ Print Method:</strong> <span style="color:#FFD966; font-weight:bold;">${escapeHtml(globalPrintMethod)}</span></div>` : ''}
                 ${order.isCustomized ? `<div class="order-detail-row"><strong>🎨 Order Type:</strong> <span style="color:#D4AF37;">✨ CUSTOM DESIGNED T-SHIRT</span></div>` : ''}
                 <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
                 <strong>👤 Customer Details:</strong>
@@ -708,7 +747,7 @@
         function closeOrderModal() { document.getElementById('orderModal').classList.remove('show'); }
         function closeEditModal() { document.getElementById('editModal').classList.remove('show'); currentEditProduct = null; }
         
-        async function openEditProductModal(productId) { /* unchanged editing logic but kept */ 
+        async function openEditProductModal(productId) {
             currentEditProduct = products.find(p => p.id == productId);
             if (!currentEditProduct) return;
             if (!currentEditProduct.sizes) currentEditProduct.sizes = [];
@@ -727,7 +766,7 @@
                 <button class="save-edit-btn" onclick="saveProductEdit()">💾 Save Changes</button></div>`;
             renderEditChips(); modal.classList.add('show');
         }
-        function renderEditChips() { /* keep same */
+        function renderEditChips() {
             const sizesContainer = document.getElementById('sizesContainer');
             if(sizesContainer) sizesContainer.innerHTML = (currentEditProduct.sizes || []).map((s,i)=>`<span class="chip">${escapeHtml(s)} <span class="remove-chip" onclick="removeSizeField(${i})">✕</span></span>`).join('');
             const colorsContainer = document.getElementById('colorsContainer');
@@ -761,8 +800,8 @@
                 <div class="stat-card"><i class="fas fa-star"></i><div class="stat-number" id="totalRevenueCustom">₹0</div><div class="stat-label">Custom Revenue</div></div></div>
                 <div class="tabs"><button class="tab-btn active" data-tab="products">📦 Products</button><button class="tab-btn" data-tab="regular">📋 Regular Orders</button><button class="tab-btn" data-tab="custom">🎨 Custom Orders</button></div>
                 <div class="tab-content active" id="productsTab"><div style="display:flex; justify-content:space-between;"><h3><i class="fas fa-tshirt"></i> All Products</h3><button class="add-product-link" id="addProductBtn"><i class="fas fa-plus"></i> Add New Product</button></div><div class="products-list" id="productsList"></div></div>
-                <div class="tab-content" id="regularTab"><div class="orders-table"><table><thead><tr><th>Order ID</th><th>Date</th><th>Customer</th><th>Amount</th><th>Status</th><th>Update</th><th>Actions</th></tr></thead><tbody id="regularOrdersList"></tbody></table></div></div>
-                <div class="tab-content" id="customTab"><div class="orders-table"><table><thead><tr><th>Design</th><th>Order ID</th><th>Date</th><th>Customer</th><th>Product</th><th>Size/Color/Print</th><th>Amount</th><th>Status</th><th>Update</th><th>Actions</th></tr></thead><tbody id="customOrdersList"></tbody></table></div></div>
+                <div class="tab-content" id="regularTab"><div class="orders-table"> <table> <thead> <tr> <th>Product</th> <th>Order ID</th> <th>Date</th> <th>Customer</th> <th>Amount</th> <th>Status</th> <th>Update</th> <th>Actions</th> </tr> </thead> <tbody id="regularOrdersList"></tbody> </table> </div></div>
+                <div class="tab-content" id="customTab"><div class="orders-table"> <table> <thead> <tr> <th>Design</th> <th>Order ID</th> <th>Date</th> <th>Customer</th> <th>Product</th> <th>Size/Color/Print</th> <th>Amount</th> <th>Status</th> <th>Update</th> <th>Actions</th> </tr> </thead> <tbody id="customOrdersList"></tbody> </table> </div></div>
                 <div id="editModal" class="edit-modal"></div><div id="orderModal" class="order-modal"><div class="order-modal-content"><div class="order-modal-header"><h3>📄 Order Details</h3><button class="close-order-modal" onclick="closeOrderModal()">&times;</button></div><div id="orderDetailContent"></div></div></div>
             `;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); document.getElementById(`${btn.dataset.tab}Tab`).classList.add('active'); }));
