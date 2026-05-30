@@ -124,16 +124,6 @@
             border-radius: 20px;
         }
         .filter-group { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        .filter-btn {
-            background: rgba(20,20,30,0.8);
-            border: 1px solid rgba(212,175,55,0.2);
-            padding: 8px 16px;
-            border-radius: 40px;
-            color: #DDD;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        .filter-btn.active, .filter-btn:hover { background: #D4AF37; color: #050508; }
         
         .products-list {
             display: grid;
@@ -167,27 +157,13 @@
         .edit-btn { background: rgba(33,150,243,0.2); color: #2196F3; }
         .delete-btn { background: rgba(244,67,54,0.2); color: #F44336; }
         
-        /* Orders Table */
         .orders-table { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08); }
         th { color: #D4AF37; font-size: 13px; }
         td { font-size: 12px; }
-        .custom-design-thumb {
-            width: 50px;
-            height: 50px;
-            background: #0E0E14;
-            border-radius: 12px;
-            overflow: hidden;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 8px;
-        }
-        .custom-design-thumb img { width: 100%; height: 100%; object-fit: cover; }
-        .custom-design-thumb i { font-size: 25px; color: #D4AF37; }
-        /* Regular order product image thumb */
-        .product-order-thumb {
+        
+        .order-thumb {
             width: 50px;
             height: 50px;
             background: #0E0E14;
@@ -197,7 +173,9 @@
             align-items: center;
             justify-content: center;
         }
-        .product-order-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .order-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .order-thumb i { font-size: 28px; color: #D4AF37; }
+        
         .status-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -309,20 +287,15 @@
             padding: 15px;
             text-align: center;
         }
-        .design-card h5 {
-            color: #D4AF37;
-            margin-bottom: 12px;
-            font-size: 14px;
-            letter-spacing: 1px;
-        }
+        .design-card h5 { color: #D4AF37; margin-bottom: 12px; font-size: 14px; }
         .design-card img {
             max-width: 100%;
             max-height: 280px;
             border-radius: 16px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
             border: 1px solid rgba(212,175,55,0.4);
             object-fit: contain;
             background: #0E0E14;
+            cursor: pointer;
         }
         .print-method-chip {
             display: inline-block;
@@ -487,10 +460,7 @@
             font-size: 10px;
             cursor: pointer;
         }
-        .custom-order-highlight {
-            background: rgba(212,175,55,0.1);
-            border-left: 3px solid #D4AF37;
-        }
+        .custom-order-highlight { background: rgba(212,175,55,0.1); border-left: 3px solid #D4AF37; }
         @media (max-width: 700px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .form-row { grid-template-columns: 1fr; }
@@ -593,14 +563,13 @@
             `).join('');
         }
         
-        // Helper: get product image for regular order item
-        function getProductImageForItem(item) {
+        function getProductImageForOrder(item) {
             if (item.imageUrl) return item.imageUrl;
             if (item.productImage) return item.productImage;
             if (item.images && item.images[0]) return item.images[0];
             if (item.productId) {
-                const foundProduct = products.find(p => p.id === item.productId);
-                if (foundProduct && foundProduct.images && foundProduct.images[0]) return foundProduct.images[0];
+                const found = products.find(p => p.id === item.productId);
+                if (found && found.images && found.images[0]) return found.images[0];
             }
             return null;
         }
@@ -609,13 +578,15 @@
             const container = document.getElementById('regularOrdersList');
             if (!container) return;
             if (regularOrders.length === 0) {
-                container.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">📭 No regular orders found</td></td>';
+                container.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:40px;">📭 No regular orders found</td></tr>';
                 return;
             }
             container.innerHTML = regularOrders.map(order => {
                 const firstItem = order.items?.[0] || {};
-                const productImg = getProductImageForItem(firstItem);
-                const imageHtml = productImg ? `<div class="product-order-thumb"><img src="${productImg}" alt="product"></div>` : `<div class="product-order-thumb"><i class="fas fa-tshirt"></i></div>`;
+                const productImg = getProductImageForOrder(firstItem);
+                const imageHtml = productImg 
+                    ? `<div class="order-thumb"><img src="${productImg}" alt="product"></div>` 
+                    : `<div class="order-thumb"><i class="fas fa-tshirt"></i></div>`;
                 return `<tr>
                     <td>${imageHtml}</td>
                     <td>${order.orderId || order.id}</td>
@@ -640,7 +611,7 @@
             container.innerHTML = customOrders.map(order => {
                 const firstItem = order.items?.[0] || {};
                 const frontImg = order.frontDesignImage || firstItem.frontDesignImage;
-                const designPreview = frontImg ? `<div class="custom-design-thumb"><img src="${frontImg}" alt="design"></div>` : `<div class="custom-design-thumb"><i class="fas fa-palette"></i></div>`;
+                const designPreview = frontImg ? `<div class="order-thumb"><img src="${frontImg}" alt="design"></div>` : `<div class="order-thumb"><i class="fas fa-palette"></i></div>`;
                 const printMethod = order.printMethod || firstItem.printMethod || 'Not specified';
                 return `<tr class="custom-order-highlight">
                     <td>${designPreview}</td>
@@ -660,19 +631,31 @@
         
         function getStatusClass(status) {
             switch(status) {
-                case 'confirmed': return 'status-confirmed'; case 'processing': return 'status-processing';
-                case 'shipped': return 'status-shipped'; case 'delivered': return 'status-delivered';
-                case 'cancelled': return 'status-cancelled'; default: return 'status-pending';
+                case 'confirmed': return 'status-confirmed';
+                case 'processing': return 'status-processing';
+                case 'shipped': return 'status-shipped';
+                case 'delivered': return 'status-delivered';
+                case 'cancelled': return 'status-cancelled';
+                default: return 'status-pending';
             }
         }
         
         async function updateOrderStatus(orderId, newStatus, isCustom) {
-            try { await db.collection('orders').doc(orderId).update({ status: newStatus, updatedAt: new Date().toISOString() }); showToast(`✅ Status updated to ${newStatus}`); await loadAllData(); } 
-            catch(e) { showToast("Update failed", true); }
+            try { 
+                await db.collection('orders').doc(orderId).update({ status: newStatus, updatedAt: new Date().toISOString() }); 
+                showToast(`✅ Status updated to ${newStatus}`); 
+                await loadAllData(); 
+            } catch(e) { showToast("Update failed", true); }
         }
         
         async function deleteOrderItem(orderId, isCustom) {
-            if (confirm('⚠️ Delete this order permanently?')) { try { await db.collection('orders').doc(orderId).delete(); showToast('✅ Deleted'); await loadAllData(); } catch(e) { showToast("Delete failed", true); } }
+            if (confirm('⚠️ Delete this order permanently?')) { 
+                try { 
+                    await db.collection('orders').doc(orderId).delete(); 
+                    showToast('✅ Deleted'); 
+                    await loadAllData(); 
+                } catch(e) { showToast("Delete failed", true); }
+            }
         }
         
         function viewOrderDetails(orderId, isCustom) {
@@ -684,8 +667,8 @@
                 const frontImg = item.frontDesignImage || order.frontDesignImage;
                 const backImg = item.backDesignImage || order.backDesignImage;
                 const printMethodVal = order.printMethod || item.printMethod || 'Standard Print';
-                const productImage = getProductImageForItem(item);
-                const productImgHtml = productImage ? `<img src="${productImage}" alt="product">` : `<i class="fas fa-tshirt"></i>`;
+                const productImg = getProductImageForOrder(item);
+                const productImgHtml = productImg ? `<img src="${productImg}" alt="product">` : `<i class="fas fa-tshirt"></i>`;
                 const designLargeHtml = (frontImg || backImg) ? `
                     <div class="design-preview-large">
                         ${frontImg ? `<div class="design-card"><h5><i class="fas fa-image"></i> FRONT DESIGN</h5><img src="${frontImg}" onclick="window.open(this.src)"></div>` : ''}
@@ -695,9 +678,7 @@
                 
                 return `
                     <div class="order-item-with-img">
-                        <div class="order-product-img">
-                            ${productImgHtml}
-                        </div>
+                        <div class="order-product-img">${productImgHtml}</div>
                         <div class="order-item-info">
                             <h4>${escapeHtml(item.name)} ${isCustomItem ? '<span class="custom-badge-detail"><i class="fas fa-paintbrush"></i> Custom Design</span>' : ''}</h4>
                             ${item.size ? `<div>📏 Size: ${escapeHtml(item.size)}</div>` : ''}
@@ -711,24 +692,11 @@
                 `;
             }).join('');
             
-            const firstItemGlobal = order.items?.[0] || {};
-            const globalPrintMethod = order.printMethod || firstItemGlobal.printMethod;
-            const globalFront = order.frontDesignImage || firstItemGlobal.frontDesignImage;
-            const globalBack = order.backDesignImage || firstItemGlobal.backDesignImage;
-            const globalDesignBlock = (globalFront || globalBack) ? `
-                <div class="design-preview-large">
-                    ${globalFront ? `<div class="design-card"><h5>🎨 FRONT DESIGN (Click to enlarge)</h5><img src="${globalFront}" onclick="window.open(this.src)" style="cursor:pointer;"></div>` : ''}
-                    ${globalBack ? `<div class="design-card"><h5>🎨 BACK DESIGN (Click to enlarge)</h5><img src="${globalBack}" onclick="window.open(this.src)" style="cursor:pointer;"></div>` : ''}
-                </div>
-            ` : '';
-            
             document.getElementById('orderDetailContent').innerHTML = `
                 <div class="order-detail-row"><strong>📋 Order ID:</strong> ${order.orderId || order.id}</div>
                 <div class="order-detail-row"><strong>📅 Date:</strong> ${new Date(order.orderDate).toLocaleString()}</div>
                 <div class="order-detail-row"><strong>📊 Status:</strong> <span class="status-badge ${getStatusClass(order.status)}">${order.status || 'Pending'}</span></div>
                 <div class="order-detail-row"><strong>💳 Payment:</strong> ${order.paymentMethod || 'Cash on Delivery'}</div>
-                ${order.isCustomized && globalPrintMethod ? `<div class="order-detail-row"><strong>🖨️ Print Method:</strong> <span style="color:#FFD966; font-weight:bold;">${escapeHtml(globalPrintMethod)}</span></div>` : ''}
-                ${order.isCustomized ? `<div class="order-detail-row"><strong>🎨 Order Type:</strong> <span style="color:#D4AF37;">✨ CUSTOM DESIGNED T-SHIRT</span></div>` : ''}
                 <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
                 <strong>👤 Customer Details:</strong>
                 <div class="order-detail-row"><strong>Name:</strong> ${order.customerName || 'Guest'}</div>
@@ -737,7 +705,6 @@
                 <div style="margin: 15px 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
                 <strong>🛍️ Order Items:</strong>
                 ${itemsHtml || '<div>No items</div>'}
-                ${(order.isCustomized && !itemsHtml.includes('design-preview-large')) ? globalDesignBlock : ''}
                 <div style="margin-top: 15px; border-top: 1px solid #D4AF37;"></div>
                 <div class="order-detail-row"><strong>💰 Total Amount:</strong> <span style="color:#D4AF37; font-size:20px;">₹${(order.total || 0).toLocaleString('en-IN')}</span></div>
             `;
@@ -766,6 +733,7 @@
                 <button class="save-edit-btn" onclick="saveProductEdit()">💾 Save Changes</button></div>`;
             renderEditChips(); modal.classList.add('show');
         }
+        
         function renderEditChips() {
             const sizesContainer = document.getElementById('sizesContainer');
             if(sizesContainer) sizesContainer.innerHTML = (currentEditProduct.sizes || []).map((s,i)=>`<span class="chip">${escapeHtml(s)} <span class="remove-chip" onclick="removeSizeField(${i})">✕</span></span>`).join('');
@@ -774,37 +742,143 @@
             const imagesPreview = document.getElementById('imagesPreview');
             if(imagesPreview) imagesPreview.innerHTML = (currentEditProduct.images || []).map((img,i)=>`<div class="edit-preview-img"><img src="${img}"><div class="remove-image-btn" onclick="removeImageField(${i})">✕</div></div>`).join('');
         }
+        
         function addSizeField() { const val = document.getElementById('newSize')?.value.trim().toUpperCase(); if(val && !currentEditProduct.sizes.includes(val)) { currentEditProduct.sizes.push(val); renderEditChips(); document.getElementById('newSize').value = ''; } }
         function removeSizeField(i) { currentEditProduct.sizes.splice(i,1); renderEditChips(); }
         function addColorField() { const name = document.getElementById('newColorName')?.value.trim(); const code = document.getElementById('newColorCode')?.value || '#D4AF37'; if(name) { currentEditProduct.colors.push({ name, code }); renderEditChips(); document.getElementById('newColorName').value = ''; } }
         function removeColorField(i) { currentEditProduct.colors.splice(i,1); renderEditChips(); }
         function removeImageField(i) { currentEditProduct.images.splice(i,1); renderEditChips(); }
-        async function uploadImages() { const files = document.getElementById('newImages')?.files; if(!files?.length) return; const newImages = []; for(const file of files) { const compressed = await compressImage(file); newImages.push(compressed); } currentEditProduct.images.push(...newImages); renderEditChips(); document.getElementById('newImages').value = ''; showToast(`✅ ${newImages.length} images added`); }
-        function compressImage(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; const maxDim = 800; if(w>maxDim||h>maxDim){ if(w>h){ h=(h*maxDim)/w; w=maxDim; } else { w=(w*maxDim)/h; h=maxDim; } } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img,0,0,w,h); resolve(canvas.toDataURL('image/jpeg',0.7)); }; img.src = e.target.result; }; reader.readAsDataURL(file); }); }
-        async function saveProductEdit() { const updated = { name: document.getElementById('editName')?.value.trim(), category: document.getElementById('editCategory')?.value.trim(), price: parseInt(document.getElementById('editPrice')?.value)||0, badge: document.getElementById('editBadge')?.value, sizes: currentEditProduct.sizes, colors: currentEditProduct.colors, images: currentEditProduct.images, fullDesc: document.getElementById('editDesc')?.value, updatedAt: new Date().toISOString() }; try { await db.collection('products').doc(currentEditProduct.id).update(updated); showToast("✅ Updated"); closeEditModal(); await loadAllData(); } catch(e) { showToast("Update failed", true); } }
-        async function deleteProductItem(id) { if (confirm('Delete product?')) { try { await db.collection('products').doc(id).delete(); showToast("Deleted"); await loadAllData(); } catch(e) { showToast("Error", true); } } }
+        
+        async function uploadImages() { 
+            const files = document.getElementById('newImages')?.files; 
+            if(!files?.length) return; 
+            const newImages = []; 
+            for(const file of files) { 
+                const compressed = await compressImage(file); 
+                newImages.push(compressed); 
+            } 
+            currentEditProduct.images.push(...newImages); 
+            renderEditChips(); 
+            document.getElementById('newImages').value = ''; 
+            showToast(`✅ ${newImages.length} images added`);
+        }
+        
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        const maxDim = 800;
+                        if(w>maxDim||h>maxDim){ if(w>h){ h=(h*maxDim)/w; w=maxDim; } else { w=(w*maxDim)/h; h=maxDim; } }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img,0,0,w,h);
+                        resolve(canvas.toDataURL('image/jpeg',0.7));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        async function saveProductEdit() {
+            const updated = {
+                name: document.getElementById('editName')?.value.trim(),
+                category: document.getElementById('editCategory')?.value.trim(),
+                price: parseInt(document.getElementById('editPrice')?.value)||0,
+                badge: document.getElementById('editBadge')?.value,
+                sizes: currentEditProduct.sizes,
+                colors: currentEditProduct.colors,
+                images: currentEditProduct.images,
+                fullDesc: document.getElementById('editDesc')?.value,
+                updatedAt: new Date().toISOString()
+            };
+            try { 
+                await db.collection('products').doc(currentEditProduct.id).update(updated); 
+                showToast("✅ Updated"); 
+                closeEditModal(); 
+                await loadAllData(); 
+            } catch(e) { showToast("Update failed", true); }
+        }
+        
+        async function deleteProductItem(id) { 
+            if (confirm('Delete product?')) { 
+                try { 
+                    await db.collection('products').doc(id).delete(); 
+                    showToast("Deleted"); 
+                    await loadAllData(); 
+                } catch(e) { showToast("Error", true); }
+            } 
+        }
+        
         function goToAddProduct() { window.location.href = 'admin-add-product.html'; }
         function openReturnManagement() { window.location.href = 'return.html'; }
         function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
         
         function renderDashboard() {
             document.getElementById('app').innerHTML = `
-                <div class="header"><div class="logo"><h1>VEDANTA ADMIN <span style="font-size:10px;">Custom + Regular</span></h1></div>
-                <div class="header-buttons"><button class="custom-orders-btn" id="customOrdersTabBtn"><i class="fas fa-palette"></i> Custom Orders</button>
-                <button class="return-manage-btn" id="returnManageBtn"><i class="fas fa-undo-alt"></i> Returns</button>
-                <button class="logout-btn" id="logoutBtn">Logout</button></div></div>
-                <div class="stats-grid"><div class="stat-card"><i class="fas fa-box"></i><div class="stat-number" id="totalProducts">0</div><div class="stat-label">Products</div></div>
-                <div class="stat-card"><i class="fas fa-shopping-cart"></i><div class="stat-number" id="totalRegularOrders">0</div><div class="stat-label">Regular Orders</div></div>
-                <div class="stat-card"><i class="fas fa-paintbrush"></i><div class="stat-number" id="totalCustomOrders">0</div><div class="stat-label">Custom Orders</div></div>
-                <div class="stat-card"><i class="fas fa-rupee-sign"></i><div class="stat-number" id="totalRevenueRegular">₹0</div><div class="stat-label">Regular Revenue</div></div>
-                <div class="stat-card"><i class="fas fa-star"></i><div class="stat-number" id="totalRevenueCustom">₹0</div><div class="stat-label">Custom Revenue</div></div></div>
-                <div class="tabs"><button class="tab-btn active" data-tab="products">📦 Products</button><button class="tab-btn" data-tab="regular">📋 Regular Orders</button><button class="tab-btn" data-tab="custom">🎨 Custom Orders</button></div>
-                <div class="tab-content active" id="productsTab"><div style="display:flex; justify-content:space-between;"><h3><i class="fas fa-tshirt"></i> All Products</h3><button class="add-product-link" id="addProductBtn"><i class="fas fa-plus"></i> Add New Product</button></div><div class="products-list" id="productsList"></div></div>
-                <div class="tab-content" id="regularTab"><div class="orders-table"> <table> <thead> <tr> <th>Product</th> <th>Order ID</th> <th>Date</th> <th>Customer</th> <th>Amount</th> <th>Status</th> <th>Update</th> <th>Actions</th> </tr> </thead> <tbody id="regularOrdersList"></tbody> </table> </div></div>
-                <div class="tab-content" id="customTab"><div class="orders-table"> <table> <thead> <tr> <th>Design</th> <th>Order ID</th> <th>Date</th> <th>Customer</th> <th>Product</th> <th>Size/Color/Print</th> <th>Amount</th> <th>Status</th> <th>Update</th> <th>Actions</th> </tr> </thead> <tbody id="customOrdersList"></tbody> </table> </div></div>
-                <div id="editModal" class="edit-modal"></div><div id="orderModal" class="order-modal"><div class="order-modal-content"><div class="order-modal-header"><h3>📄 Order Details</h3><button class="close-order-modal" onclick="closeOrderModal()">&times;</button></div><div id="orderDetailContent"></div></div></div>
+                <div class="header">
+                    <div class="logo"><h1>VEDANTA ADMIN <span style="font-size:10px;">Custom + Regular</span></h1></div>
+                    <div class="header-buttons">
+                        <button class="custom-orders-btn" id="customOrdersTabBtn"><i class="fas fa-palette"></i> Custom Orders</button>
+                        <button class="return-manage-btn" id="returnManageBtn"><i class="fas fa-undo-alt"></i> Returns</button>
+                        <button class="logout-btn" id="logoutBtn">Logout</button>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-card"><i class="fas fa-box"></i><div class="stat-number" id="totalProducts">0</div><div class="stat-label">Products</div></div>
+                    <div class="stat-card"><i class="fas fa-shopping-cart"></i><div class="stat-number" id="totalRegularOrders">0</div><div class="stat-label">Regular Orders</div></div>
+                    <div class="stat-card"><i class="fas fa-paintbrush"></i><div class="stat-number" id="totalCustomOrders">0</div><div class="stat-label">Custom Orders</div></div>
+                    <div class="stat-card"><i class="fas fa-rupee-sign"></i><div class="stat-number" id="totalRevenueRegular">₹0</div><div class="stat-label">Regular Revenue</div></div>
+                    <div class="stat-card"><i class="fas fa-star"></i><div class="stat-number" id="totalRevenueCustom">₹0</div><div class="stat-label">Custom Revenue</div></div>
+                </div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="products">📦 Products</button>
+                    <button class="tab-btn" data-tab="regular">📋 Regular Orders</button>
+                    <button class="tab-btn" data-tab="custom">🎨 Custom Orders</button>
+                </div>
+                <div class="tab-content active" id="productsTab">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:20px;">
+                        <h3><i class="fas fa-tshirt"></i> All Products</h3>
+                        <button class="add-product-link" id="addProductBtn"><i class="fas fa-plus"></i> Add New Product</button>
+                    </div>
+                    <div class="products-list" id="productsList"></div>
+                </div>
+                <div class="tab-content" id="regularTab">
+                    <div class="orders-table">
+                        <table>
+                            <thead><tr><th>Product</th><th>Order ID</th><th>Date</th><th>Customer</th><th>Amount</th><th>Status</th><th>Update</th><th>Actions</th></tr></thead>
+                            <tbody id="regularOrdersList"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-content" id="customTab">
+                    <div class="orders-table">
+                        <table>
+                            <thead><tr><th>Design</th><th>Order ID</th><th>Date</th><th>Customer</th><th>Product</th><th>Size/Color/Print</th><th>Amount</th><th>Status</th><th>Update</th><th>Actions</th></tr></thead>
+                            <tbody id="customOrdersList"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="editModal" class="edit-modal"></div>
+                <div id="orderModal" class="order-modal">
+                    <div class="order-modal-content">
+                        <div class="order-modal-header"><h3>📄 Order Details</h3><button class="close-order-modal" onclick="closeOrderModal()">&times;</button></div>
+                        <div id="orderDetailContent"></div>
+                    </div>
+                </div>
             `;
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => { document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active')); document.getElementById(`${btn.dataset.tab}Tab`).classList.add('active'); }));
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+                    document.getElementById(`${btn.dataset.tab}Tab`).classList.add('active');
+                });
+            });
             document.getElementById('addProductBtn')?.addEventListener('click', goToAddProduct);
             document.getElementById('logoutBtn')?.addEventListener('click', () => { localStorage.removeItem('adminLoggedIn'); isLoggedIn = false; renderLoginPage(); });
             document.getElementById('returnManageBtn')?.addEventListener('click', openReturnManagement);
@@ -812,19 +886,52 @@
         }
         
         function renderLoginPage() {
-            document.getElementById('app').innerHTML = `<div class="login-container"><div class="login-card"><h2>VEDANTA ADMIN</h2><p>Enter credentials</p>
-            <div class="input-group"><label>Username</label><input type="text" id="adminUsername"></div>
-            <div class="input-group"><label>Password</label><input type="password" id="adminPassword"></div>
-            <button class="login-btn" id="loginBtn">Login</button></div></div>`;
-            document.getElementById('loginBtn').addEventListener('click', () => { const u = document.getElementById('adminUsername').value.trim(); const p = document.getElementById('adminPassword').value.trim(); if (u === ADMIN_USERNAME && p === ADMIN_PASSWORD) { localStorage.setItem('adminLoggedIn', 'true'); showToast('Login success'); renderDashboard(); } else { showToast('Invalid credentials', true); } });
+            document.getElementById('app').innerHTML = `
+                <div class="login-container">
+                    <div class="login-card">
+                        <h2>VEDANTA ADMIN</h2>
+                        <p>Enter credentials</p>
+                        <div class="input-group"><label>Username</label><input type="text" id="adminUsername"></div>
+                        <div class="input-group"><label>Password</label><input type="password" id="adminPassword"></div>
+                        <button class="login-btn" id="loginBtn">Login</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('loginBtn').addEventListener('click', () => {
+                const u = document.getElementById('adminUsername').value.trim();
+                const p = document.getElementById('adminPassword').value.trim();
+                if (u === ADMIN_USERNAME && p === ADMIN_PASSWORD) {
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    showToast('Login success');
+                    renderDashboard();
+                } else { showToast('Invalid credentials', true); }
+            });
         }
         
-        window.openEditProductModal = openEditProductModal; window.closeEditModal = closeEditModal; window.saveProductEdit = saveProductEdit; window.deleteProductItem = deleteProductItem;
-        window.updateOrderStatus = updateOrderStatus; window.deleteOrderItem = deleteOrderItem; window.viewOrderDetails = viewOrderDetails; window.closeOrderModal = closeOrderModal;
-        window.goToAddProduct = goToAddProduct; window.addSizeField = addSizeField; window.removeSizeField = removeSizeField; window.addColorField = addColorField; window.removeColorField = removeColorField; window.uploadImages = uploadImages; window.removeImageField = removeImageField;
+        // Expose globals
+        window.openEditProductModal = openEditProductModal;
+        window.closeEditModal = closeEditModal;
+        window.saveProductEdit = saveProductEdit;
+        window.deleteProductItem = deleteProductItem;
+        window.updateOrderStatus = updateOrderStatus;
+        window.deleteOrderItem = deleteOrderItem;
+        window.viewOrderDetails = viewOrderDetails;
+        window.closeOrderModal = closeOrderModal;
+        window.goToAddProduct = goToAddProduct;
+        window.addSizeField = addSizeField;
+        window.removeSizeField = removeSizeField;
+        window.addColorField = addColorField;
+        window.removeColorField = removeColorField;
+        window.uploadImages = uploadImages;
+        window.removeImageField = removeImageField;
         
-        if (isLoggedIn) renderDashboard(); else renderLoginPage();
-        if (typeof db !== 'undefined') { db.collection('products').onSnapshot(() => { if (isLoggedIn) loadAllData(); }); db.collection('orders').onSnapshot(() => { if (isLoggedIn) loadAllData(); }); }
+        if (isLoggedIn) renderDashboard();
+        else renderLoginPage();
+        
+        if (typeof db !== 'undefined') {
+            db.collection('products').onSnapshot(() => { if (isLoggedIn) loadAllData(); });
+            db.collection('orders').onSnapshot(() => { if (isLoggedIn) loadAllData(); });
+        }
     </script>
 </body>
 </html>
